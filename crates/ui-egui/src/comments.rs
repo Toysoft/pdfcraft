@@ -1341,11 +1341,11 @@ pub(crate) fn caret_snap(text: &PageText, vx: f32, vy: f32) -> Option<([f32; 2],
 
 /// A text box sized to its text (at most 300 pt wide), hanging from its top-left corner.
 pub fn text_box_rect(at: [f64; 2], text: &str, size: f64) -> [f64; 4] {
-    use pdfcraft_engine::annot_text::{text_width, wrap};
+    use pdfcraft_engine::annot_text::{text_measure, text_wrap};
     let pad = 2.0;
-    let longest = text.lines().map(|l| text_width(l, size)).fold(0.0, f64::max);
+    let longest = text_measure(text, size);
     let w = (longest + 2.0 * pad + 4.0).clamp(40.0, 300.0);
-    let lines = wrap(text, size, w - 2.0 * pad).len().max(1);
+    let lines = text_wrap(text, size, w - 2.0 * pad).len().max(1);
     let h = lines as f64 * size * 1.2 + 2.0 * pad + 2.0;
     [at[0], at[1] - h, at[0] + w, at[1]]
 }
