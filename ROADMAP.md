@@ -149,6 +149,8 @@ Ranked; detail and the full milestone table in [docs/roadmap.md](docs/roadmap.md
 
 ## Progress log
 
+- **2026-10-13 (M3, local tab reorder):** Document-tab placement preserves DocId and editing/view state; release-to-commit dragging, Escape cancellation, overflow scrolling and Move Left/Right context/palette/control commands. macOS control-driven smoke tests pass with wgpu/Glow; other native platforms remain pending; detachment remains separate. See [tab-reordering.md](docs/tab-reordering.md).
+
 - **2026-10-13 (M3, native-opening candidate):** Chosen tools survive preparation, conversion and password retries; startup intake waits for pending preparation. Regression tests cover completion, cancellation and document identity. Estimates unchanged.
 - **2026-10-12 (M13, CLI robustness scans):** `pdfcraft-cli check` visits a directory once even when input roots overlap or directory symlinks lead back into the tree. PDFs reached through file symlinks remain accepted. Three real CLI regressions cover overlapping roots, a directory cycle and directory/file aliases. Estimates unchanged.
 - **2026-10-12 (M4, Type 3 extraction fidelity):** Extract and Split preserve shared image/resource dictionaries reached through Type 3 glyphs, including nested forms, patterns and soft masks. A bounded object-graph walk protects unknown glyph content; unreadable pages/forms retain their glyph resources, and shared explicit fonts are visited once. Separate page dictionaries still prune unused images. Synthetic save/reopen regressions and an opt-in Poppler pixel oracle cover resource ownership, nested forms, cycles, limits and repeated fonts. Estimates unchanged.
