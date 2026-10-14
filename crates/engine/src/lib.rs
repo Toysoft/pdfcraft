@@ -2883,8 +2883,12 @@ pub struct Session {
     /// injected time AS local time and zeroes the zone, so injecting only it leaves either the
     /// local dates or the UTC ones wrong by the zone's offset.
     utc_offset: Option<fn() -> i64>,
-    /// Certificates trusted for signing (Acrobat: Trusted Certificates).
+    /// What is trusted for signing: the user's certificates (Acrobat: Trusted Certificates) and the
+    /// trust lists they loaded.
     trust: Arc<TrustStore>,
+    /// How often every open document's signatures were validated again after a trust change.
+    #[cfg(test)]
+    revalidations: usize,
     /// Preferences ▸ JavaScript ▸ Enable Acrobat JavaScript, inverted (on by default).
     js_off: bool,
     /// Preferences ▸ Date format, when not the default (see [`dates`]).
@@ -4767,9 +4771,38 @@ impl Session {
         &self.trust.certs
     }
 
+    /// Change the trust store and revalidate every open document's signatures, once, however
+    /// many changes `change` makes: revalidating runs chain building and signature verification
+    /// for every signature, against every certificate of every trust list.
+    pub fn update_trust(&mut self, change: impl FnOnce(&mut TrustStore)) {
+        let mut trust = (*self.trust).clone();
+        change(&mut trust);
+        self.trust = Arc::new(trust);
+        self.revalidate_signatures();
+    }
+
     /// Replace the trusted certificates and revalidate every open document's signatures.
     pub fn set_trusted_certificates(&mut self, certs: Vec<pdfcraft_sign::Certificate>) {
-        self.trust = Arc::new(TrustStore { certs });
+        self.update_trust(|trust| trust.certs = certs);
+    }
+
+    /// The trust lists the user loaded (e.g. the EU Trusted Lists' qualified CAs), none by default.
+    /// They are not part of [`Session::trusted_certificates`].
+    pub fn trust_lists(&self) -> &[pdfcraft_sign::trust::TrustList] {
+        &self.trust.lists
+    }
+
+    /// Load `list` (replacing a list of the same name), or with `None` remove the list called
+    /// `name`, and revalidate every open document.
+    pub fn set_trust_list(&mut self, name: &str, list: Option<pdfcraft_sign::trust::TrustList>) {
+        self.update_trust(|trust| trust.set_list(name, list));
+    }
+
+    fn revalidate_signatures(&mut self) {
+        #[cfg(test)]
+        {
+            self.revalidations += 1;
+        }
         for doc in &mut self.docs {
             doc.trust = self.trust.clone();
             if let Some(e) = doc.editor.as_ref() {
