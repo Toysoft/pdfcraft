@@ -96,7 +96,7 @@ licence = "MIT OR Apache-2.0"
 licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "German UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
-sha256 = "686ab9658b7ef9dd7f3af05ce73f99f1ab2a75f8357bad6f7e987d40a8730df9"
+sha256 = "8514565abd37dd3e5f5298812f9cb0cfb667c471a8d832ed17577513687604e1"
 
 [[asset]]
 path = "crates/ui-egui/src/i18n/te.tsv"
@@ -223,12 +223,12 @@ sha256 = "2b5edfe026578ed475f07f94f1d1ed4a3dac93a745c19209589936e2d67f6ec5"
 path = "crates/ui-egui/src/i18n/lt.tsv"
 title = "Lithuanian interface translation catalog"
 author = "PdfCraft contributors"
-source = "Contributor-original: clean-room translations of PdfCraft's English UI labels and user-facing messages; reviewed by a native Lithuanian-speaking contributor"
+source = "Contributor-original: clean-room translations of PdfCraft's English UI labels and user-facing messages; original catalog reviewed by a native Lithuanian-speaking contributor; new Pages PDF preview notice awaits native-speaker review"
 licence = "MIT OR Apache-2.0"
 licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "Lithuanian UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
-sha256 = "fe58835b0538f470b463f078e1b4cdf78a8e2632056bc61c6946071478f39a64"
+sha256 = "e4af357859829c43410733c4baf7aca831b20a0450ac53f133b421e4992a13e4"
 
 [[asset]]
 path = "assets/icons/accessibility.svg"

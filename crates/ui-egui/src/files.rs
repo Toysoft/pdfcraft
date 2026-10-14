@@ -546,6 +546,7 @@ impl PdfCraftApp {
         let count = self.session.get(id).map_or(0, |d| d.info.pages.len());
         let start = chosen.unwrap_or(after).min(count);
         let mut at = start;
+        let mut preview = false;
         for file in files {
             let (name, bytes) = match file {
                 Ok(file) => file,
@@ -554,10 +555,12 @@ impl PdfCraftApp {
                     continue;
                 }
             };
-            let converted =
-                self.session.convert_to_pdf(&name, &Arc::new(bytes)).and_then(|(_, pdf)| Ok((self.session.page_count_of(&name, &pdf)?, pdf)));
+            let converted = self
+                .session
+                .convert_to_pdf(&name, &Arc::new(bytes))
+                .and_then(|(kind, pdf)| Ok((kind, self.session.page_count_of(&name, &pdf)?, pdf)));
             match converted {
-                Ok((pages, bytes)) => {
+                Ok((kind, pages, bytes)) => {
                     if self.apply_edit(Edit::InsertPagesFrom {
                         name,
                         bytes,
@@ -566,6 +569,7 @@ impl PdfCraftApp {
                         field_conflicts: pdfcraft_engine::FieldConflicts::Rename,
                     }) {
                         at = at.saturating_add(pages);
+                        preview |= kind == pdfcraft_engine::SourceKind::PagesPreview;
                     }
                 }
                 Err(e) => self.notify_error(e),
@@ -575,6 +579,9 @@ impl PdfCraftApp {
             && let Some(view) = self.active.and_then(|i| self.views.get_mut(i))
         {
             view.select_pages(&(start..at).collect::<Vec<_>>());
+        }
+        if preview {
+            self.notify_tr(pdfcraft_engine::PAGES_PREVIEW_NOTICE);
         }
     }
 
