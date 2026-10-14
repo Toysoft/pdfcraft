@@ -2545,6 +2545,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         || app.pending_remote_link.is_some()
         || app.updates.open;
     let mut clicked_link: Option<LinkTarget> = None;
+    let mut javascript_link = None;
+    let mut clicked_annotation = None;
     let mut remote_open: Option<(pdfcraft_engine::DocId, String, pdfcraft_render::RemoteDestination)> = None;
     let mut canvas_action: Option<comments::CanvasAction> = None;
     let mut field_menu: Option<FieldMenu> = None;
@@ -3241,11 +3243,13 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                             LinkTarget::Uri(u) => u.clone(),
                             LinkTarget::SetLayers { .. } => tl!("Set layer visibility").to_string(),
                             LinkTarget::RemoteGoTo { file, .. } => file.clone(),
+                            LinkTarget::JavaScript(_) => "JavaScript".to_string(),
                             LinkTarget::Other(s) => crate::i18n::fmt(tl!("{s} action"), &[("s", s)]),
                         };
                         hover_text = Some((p, label));
                         if resp.clicked() && tool == QuickTool::Select && !consumed {
                             clicked_link = Some(l.target.clone());
+                            clicked_annotation = Some((l.page, l.index));
                         }
                     }
                 }
@@ -3658,6 +3662,10 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         Some(LinkTarget::Uri(u)) => app.request_document_url(&u, crate::LinkOrigin::Link),
         Some(LinkTarget::SetLayers { changes, preserve_rb }) => set_layers(app, index, &changes, preserve_rb),
         Some(LinkTarget::RemoteGoTo { file, destination, .. }) => remote_open = Some((view.id, file, destination)),
+        Some(LinkTarget::JavaScript(_)) => {
+            javascript_link =
+                clicked_annotation.map(|(page, index)| (view.id, page, index, ui.ctx().input(|i| i.pointer.interact_pos()).unwrap_or(avail.center())))
+        }
         Some(LinkTarget::Other(s)) => app.notify_fmt("This PDF uses the unsupported {s} action.", &[("s", &s)]),
         None => {}
     }
@@ -3766,6 +3774,9 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     }
     if copy_selected {
         app.execute("edit.copy");
+    }
+    if let Some((id, page, annotation, point)) = javascript_link {
+        app.run_link_script_at(id, page, annotation, point, Some(ui.ctx().cumulative_frame_nr()));
     }
     quick_bar(app, avail, ui);
     if let Some((source, file, destination)) = remote_open {
