@@ -15,7 +15,8 @@ use pdfcraft_render::{DestView, DocInfo, LayerOp, LinkTarget, PRINT_TAG, PageTex
 use crate::theme::{self, Tokens};
 use crate::{PdfCraftApp, QuickTool, RightPanel, comments, icons, widgets};
 
-/// Logical pixels per PDF point at 100% (96 dpi, like browsers).
+/// Logical pixels per PDF point at 100% on the standard basis (96 dpi, like browsers). A view
+/// draws at its own [`DocView::pt`], which a calibrated screen resolution changes ([`crate::screen_ppi`]).
 pub const PT: f32 = 96.0 / 72.0;
 const GAP: f32 = 14.0;
 const MARGIN: f32 = 28.0;
@@ -289,6 +290,9 @@ pub struct RasterMemory {
 pub struct DocView {
     pub id: DocId,
     pub zoom: f32,
+    /// Logical pixels per PDF point at 100%: [`PT`], or the screen's calibrated resolution
+    /// ([`crate::screen_ppi::basis`]), set by the app every frame.
+    pub pt: f32,
     pub fit: Fit,
     pub layout: PageLayout,
     /// Whether the base layout scrolls continuously (independent of `layout`, as in Acrobat).
@@ -580,6 +584,7 @@ impl DocView {
         Self {
             id,
             zoom: defaults.zoom,
+            pt: PT,
             fit: defaults.fit,
             layout: defaults.layout,
             continuous: defaults.continuous,
@@ -1072,7 +1077,7 @@ impl DocView {
                 let (dw, dh) = self.display_size(p);
                 let (w, h) = ((ax - bx).abs() * dw, (ay - by).abs() * dh);
                 if w >= 1.0 && h >= 1.0 && self.viewport_w >= 1.0 && self.viewport_h >= 1.0 {
-                    self.zoom = (self.viewport_w / (w * PT)).min(self.viewport_h / (h * PT)).clamp(0.08, 64.0);
+                    self.zoom = (self.viewport_w / (w * self.pt)).min(self.viewport_h / (h * self.pt)).clamp(0.08, 64.0);
                     self.fit = Fit::None;
                     self.zoom_anchor = None;
                 }
@@ -1678,13 +1683,13 @@ impl DocView {
         let avail_w = (self.viewport_w - 2.0 * SIDE).max(100.0);
         let per_row = if self.layout == PageLayout::TwoUp { 2.0 } else { 1.0 };
         match self.fit {
-            Fit::Width => self.zoom = (avail_w - GAP * (per_row - 1.0)) / (w * PT * per_row),
+            Fit::Width => self.zoom = (avail_w - GAP * (per_row - 1.0)) / (w * self.pt * per_row),
             Fit::Page => {
-                let zw = (avail_w - GAP * (per_row - 1.0)) / (w * PT * per_row);
-                let zh = (self.viewport_h - 2.0 * MARGIN) / (h * PT);
+                let zw = (avail_w - GAP * (per_row - 1.0)) / (w * self.pt * per_row);
+                let zh = (self.viewport_h - 2.0 * MARGIN) / (h * self.pt);
                 self.zoom = zw.min(zh);
             }
-            Fit::Height => self.zoom = (self.viewport_h - 2.0 * MARGIN) / (h * PT),
+            Fit::Height => self.zoom = (self.viewport_h - 2.0 * MARGIN) / (h * self.pt),
             Fit::None => {}
         }
         self.zoom = self.zoom.clamp(0.08, 64.0);
@@ -1697,12 +1702,12 @@ impl DocView {
         let shown = info.pages.iter().enumerate().filter(|&(i, _)| single.is_none_or(|c| c == i));
         let max_w = shown.map(|(_, p)| self.display_size(p).0).fold(0.0, f32::max);
         let per_row = if self.layout == PageLayout::TwoUp { 2.0 } else { 1.0 };
-        (max_w * self.zoom * PT * per_row + 2.0 * SIDE).max(avail_w)
+        (max_w * self.zoom * self.pt * per_row + 2.0 * SIDE).max(avail_w)
     }
 
     /// Page rects in content coordinates (origin at the scroll content's top-left).
     fn layout(&self, info: &DocInfo, content_w: f32) -> Vec<Rect> {
-        let s = self.zoom * PT;
+        let s = self.zoom * self.pt;
         let mut rects = Vec::with_capacity(info.pages.len());
         let mut y = MARGIN;
         match self.layout {
@@ -1740,7 +1745,7 @@ impl DocView {
     fn render_scale(&self, ppp: f32) -> f32 {
         // Exactly the device scale: a raster at any other scale is resampled on screen, which
         // blurs every line and glyph (#260).
-        self.zoom * PT * ppp
+        self.zoom * self.pt * ppp
     }
 
     /// Queue sharp rasters for the print preview. Pages that leave the nearby sheets are dropped.
