@@ -184,3 +184,16 @@ unapplied with a warning.
 `doc_batch` runs conversion, OCR and compression over files and optionally recursive
 folders. The CLI also exposes it as `pdfcraft-cli batch`. See the
 [batch guide](../../docs/cli-batch.md) for examples, output protection, errors and limits.
+
+### Pages previews in conversion jobs
+
+`doc_create_multiple` and `doc_batch` can extract an embedded PDF preview from `.pages`
+archives. This is not native Pages conversion: an IWA document without
+`QuickLook/Preview.pdf` returns an error recommending export from Pages. A successful
+preview produces a warning (on the combined result, the separate file result, or the
+batch convert step); it may be outdated or incomplete. Existing path confinement,
+atomic outputs and collision handling apply. For example:
+
+```json
+{"tool":"doc_create_multiple","args":{"paths":["letter.pages"],"mode":"separate","out_dir":"pdf"}}
+```

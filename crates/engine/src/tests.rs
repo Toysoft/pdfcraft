@@ -924,7 +924,12 @@ fn a_page_with_a_form_field_shown_twice_keeps_one_field() {
 fn files_that_cannot_be_converted_are_refused_clearly() {
     let s = Session::new();
     let err = s.convert_to_pdf("report.docx", &Arc::new(b"PK\x03\x04".to_vec())).unwrap_err();
-    assert_eq!(err, EditError::Source("report.docx: this file type can't be converted; use a PDF, an image or a .txt file".into()));
+    assert_eq!(
+        err,
+        EditError::Source(
+            "report.docx: this file type can't be converted; use a PDF, an image, a .txt file or a .pages file with a PDF preview".into()
+        )
+    );
     assert!(matches!(s.convert_to_pdf("empty", &Arc::new(Vec::new())), Err(EditError::Source(_))));
     // Damaged inputs of a known type fail with an error, not a panic.
     assert!(s.convert_to_pdf("bad.png", &Arc::new(b"\x89PNG\r\n\x1a\nnope".to_vec())).is_err());
@@ -4522,4 +4527,19 @@ fn copy_image_finds_a_picture_inside_form_artwork_under_text() {
     // The largest picture in the group, as the JPEG stored in the PDF.
     assert_eq!(d.page_image_copy_file(0, 0).unwrap(), ("jpg", jpeg));
     assert!(d.page_image_copy_file(0, 1).is_err());
+}
+
+#[test]
+fn pages_preview_conversion_checks_pdf_and_keeps_all_preview_pages() {
+    let s = Session::new();
+    let pdf = s.create_blank(200.0, 300.0, 2).unwrap();
+    let mut zip = pdfcraft_export::Zip::default();
+    zip.add("QuickLook/Preview.pdf", &pdf, false);
+    let package = Arc::new(zip.finish());
+    let (kind, back) = s.convert_to_pdf("sample.PAGES", &package).unwrap();
+    assert_eq!(kind, SourceKind::PagesPreview, "ZIP-contained PDF header must not identify the ZIP itself as a PDF");
+    assert_eq!(back, pdf);
+    let mut zip = pdfcraft_export::Zip::default();
+    zip.add("QuickLook/Preview.pdf", b"%PDF-1.7\ninvalid", false);
+    assert!(s.convert_to_pdf("bad.pages", &Arc::new(zip.finish())).is_err());
 }
