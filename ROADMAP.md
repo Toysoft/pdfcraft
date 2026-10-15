@@ -490,6 +490,7 @@ Newest first: the date, what moved, and the new overall estimate.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-13 | minor | M9: validated states drawn into layered signature appearances for display, and snapshot tabs that reuse instead of multiplying; estimates unchanged |
 | 2026-10-12 | minor | M6: valid AcroForm XML element names with original PDF field names preserved; saved-PDF collision and Unicode regressions. Estimates unchanged. |
 | 2026-10-12 | minor | M6: preserve carriage returns in exported CSV field names and values; saved-PDF round-trip coverage. Estimates unchanged. |
 | 2026-10-13 | minor | M4: Insert-from-file preserves source bookmarks; integration tests retained with current main. Estimates unchanged. |
