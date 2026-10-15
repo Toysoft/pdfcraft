@@ -243,6 +243,17 @@ usage = "Vietnamese UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
 sha256 = "f9002d56e44e49429e0cdeabb10525f79f32831b94233f3c0a8a0ecb202850d5"
 
 [[asset]]
+path = "crates/ui-egui/src/i18n/ro.tsv"
+title = "Romanian interface translation catalog"
+author = "PdfCraft contributors"
+source = "Contributor-original: clean-room translations of PdfCraft's English UI labels and user-facing messages"
+licence = "MIT OR Apache-2.0"
+licence_file = "LICENSE-MIT"
+kind = "translation"
+usage = "Romanian UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
+sha256 = "5209018827b4ca82b57bc6f00c840cd798c0cb4de20e051c85f89b4431394b80"
+
+[[asset]]
 path = "assets/icons/accessibility.svg"
 title = "Lucide icon \"accessibility\""
 author = "Lucide Contributors (portions Cole Bemis, Feather)"
