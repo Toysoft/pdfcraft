@@ -147,7 +147,7 @@ fn plural_sl(n: u64) -> usize {
 }
 
 /// The registry. English first: it is the fallback and the source language.
-pub static LANGUAGES: [LangInfo; 23] = [
+pub static LANGUAGES: [LangInfo; 24] = [
     LangInfo { code: "en", name: "English", source: "", plural: plural_one_other, rtl: false, catalog: OnceLock::new() },
     LangInfo { code: "ja", name: "日本語", source: include_str!("ja.tsv"), plural: plural_none, rtl: false, catalog: OnceLock::new() },
     // Simplified Chinese; `zh`, `zh-CN`, `zh-SG` and `zh-Hans-*` locales resolve here (see `candidates`).
@@ -210,6 +210,8 @@ pub static LANGUAGES: [LangInfo; 23] = [
     // Vietnamese; every `vi-*` locale (`vi-VN`, `vi_VN.UTF-8`) resolves here. CLDR `vi` counts have
     // one form ("other"), so `@plural` entries list a single form.
     LangInfo { code: "vi", name: "Tiếng Việt", source: include_str!("vi.tsv"), plural: plural_none, rtl: false, catalog: OnceLock::new() },
+    // Korean; every `ko-*` locale (`ko-KR`, `ko_KR.UTF-8`) resolves here. No plural forms.
+    LangInfo { code: "ko", name: "한국어", source: include_str!("ko.tsv"), plural: plural_none, rtl: false, catalog: OnceLock::new() },
 ];
 
 impl LangInfo {
@@ -3342,6 +3344,102 @@ mod tests {
                 assert_eq!(e.translation.ends_with('…'), command.label.ends_with('…'), "{}: ellipsis mismatch: {}", l.code, e.source);
             }
         }
+    }
+
+    #[test]
+    fn korean_is_registered_and_persists() {
+        let ko = Lang::from_code("ko").expect("ko registered");
+        assert_eq!(ko.name(), "한국어");
+        assert!(!ko.rtl());
+        assert_eq!(normalize_pref("KO"), Some("ko"));
+        for tag in ["ko", "ko-KR", "ko_KR.UTF-8", "KO-kr"] {
+            assert_eq!(lang_from_tag(tag), Some(ko), "{tag}");
+        }
+        assert_eq!(tr(ko, "File"), "파일");
+        assert_eq!(tr(ko, "Edit"), "편집");
+        assert_eq!(tr(ko, "Save"), "저장");
+        assert_eq!(tr(ko, "Interface language"), "인터페이스 언어");
+        // One plural form: the count is the only thing that changes.
+        assert_eq!(trn(ko, 1, "{n} page", "{n} pages"), trn(ko, 5, "{n} page", "{n} pages").replace('5', "1"));
+        assert!(trn(ko, 21, "{n} page", "{n} pages").starts_with("21"));
+        let mut app = crate::PdfCraftApp::default();
+        app.set_option("language", "KO").unwrap();
+        assert_eq!(app.language, "ko");
+        let mut restored = crate::PdfCraftApp::default();
+        restored.restore(&app.persist());
+        assert_eq!(restored.language, "ko");
+        assert!(restored.set_option("language", "kr").is_err(), "kr is a country, not a language");
+    }
+
+    #[test]
+    fn korean_covers_commands_and_catalogue() {
+        let ko = Lang::from_code("ko").expect("ko registered");
+        let mut missing = std::collections::BTreeSet::new();
+        for command in pdfcraft_engine::commands::COMMANDS {
+            if !has(ko, command.label) {
+                missing.insert(command.label);
+            }
+            if let Some(menu) = command.menu
+                && !has(ko, menu)
+            {
+                missing.insert(menu);
+            }
+        }
+        for group in pdfcraft_engine::catalog::TOOL_GROUPS {
+            if !has(ko, group.label) {
+                missing.insert(group.label);
+            }
+            for section in group.sections {
+                if !has(ko, section.title) {
+                    missing.insert(section.title);
+                }
+                for item in section.items {
+                    if !has(ko, item.label) {
+                        missing.insert(item.label);
+                    }
+                }
+            }
+        }
+        assert!(missing.is_empty(), "Korean misses commands/tools: {missing:#?}");
+    }
+
+    #[test]
+    fn korean_covers_ui_literals() {
+        let ko = Lang::from_code("ko").expect("ko registered");
+        let missing: Vec<_> = scan_ui_literals(true).into_iter().filter(|label| !has(ko, label)).collect();
+        assert!(missing.is_empty(), "Untranslated Korean UI labels: {missing:#?}");
+    }
+
+    #[test]
+    fn korean_covers_bundled_catalog_keys() {
+        // English keys of every other catalog, so labels reached through helpers count too.
+        let ko = Lang::from_code("ko").expect("ko registered");
+        let mut missing = std::collections::BTreeSet::new();
+        for reference in LANGUAGES.iter().filter(|language| language.code != "ko") {
+            // A malformed reference line is `bundled_catalogs_are_consistent`'s to report; its
+            // well-formed keys still count here.
+            let (entries, _errors) = catalog::parse_entries(reference.source, reference.plural_forms());
+            for entry in entries {
+                let translated = match entry.context.as_str() {
+                    "" => ko.catalog().plain(&entry.source),
+                    "@id" => ko.catalog().id(&entry.source),
+                    "@plural" => entry.source.split_once('|').and_then(|(one, other)| ko.catalog().plural(one, other, 0)),
+                    context => ko.catalog().contextual(context, &entry.source),
+                };
+                if translated.is_none() {
+                    missing.insert((entry.context, entry.source));
+                }
+            }
+        }
+        assert!(missing.is_empty(), "Korean misses bundled catalog keys: {missing:#?}");
+    }
+
+    #[test]
+    fn korean_diagnostics_preserve_user_values() {
+        let ko = Lang::from_code("ko").expect("ko registered");
+        let msg = fmt(tr(ko, "Remove {name} from Recent"), &[("name", "{n} 보고서.pdf")]);
+        assert!(msg.contains("{n} 보고서.pdf"), "{msg}");
+        assert!(msg.chars().any(|c| ('\u{AC00}'..='\u{D7A3}').contains(&c)), "{msg}");
     }
 
     /// Preferences ▸ Date format ▸ Language offers exactly the interface languages, in order.

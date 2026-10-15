@@ -275,6 +275,45 @@ fn chinese_ui_uses_an_installed_chinese_face() {
     }
 }
 
+/// Every character of the Korean catalog has a glyph in every family, from a craft-fonts `Kore`
+/// face or, without one, an installed Korean face (Malgun Gothic, Apple SD Gothic Neo, Nanum
+/// Gothic, …) that only the installed definitions name.
+#[test]
+fn korean_ui_text_has_glyphs() {
+    let embedded = !pdfcraft_fonts::ui_korean_fonts().is_empty();
+    assert!(!theme::font_definitions().font_data.contains_key(theme::SYSTEM_KOREAN_FALLBACK));
+    let defs = theme::installed_font_definitions(theme::CjkPreference::Default);
+    let installed = defs.font_data.contains_key(theme::SYSTEM_KOREAN_FALLBACK);
+    assert!(!(embedded && installed), "an installed Korean face is only read without a Kore face");
+    if !embedded && !installed {
+        eprintln!("skipping korean_ui_text_has_glyphs: no Kore face and no installed Korean face (or PDFCRAFT_SYSTEM_FONTS=0)");
+        return;
+    }
+    if installed {
+        for (family, stack) in &defs.families {
+            assert_eq!(stack.iter().filter(|n| *n == theme::SYSTEM_KOREAN_FALLBACK).count(), 1, "{family:?}: {stack:?}");
+            let own = stack.iter().position(|n| n.starts_with("Inter") || n == "JetBrainsMono").expect("the app's own font");
+            assert!(stack.iter().position(|n| n == theme::SYSTEM_KOREAN_FALLBACK).is_some_and(|i| own < i), "{family:?}: {stack:?}");
+        }
+    }
+    let mut hangul: Vec<char> = include_str!("../src/i18n/ko.tsv")
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+        .filter_map(|l| l.split('\t').nth(2))
+        .flat_map(str::chars)
+        .filter(|c| ('\u{AC00}'..='\u{D7A3}').contains(c))
+        .collect();
+    hangul.sort_unstable();
+    hangul.dedup();
+    assert!(hangul.len() > 500, "the catalog is Korean: {}", hangul.len());
+    let mut fonts = Fonts::new(TextOptions::default(), defs);
+    for id in families() {
+        let missing: String = hangul.iter().filter(|c| !fonts.has_glyphs(&id, &c.to_string())).collect();
+        assert!(missing.is_empty(), "{id:?} lacks {missing}");
+    }
+    assert!(layout_widths(&mut fonts, "한국어 인터페이스").iter().all(|w| w.is_finite() && *w > 0.0));
+}
+
 /// Without craft-fonts the interface fonts still install and lay out any text (Japanese falls
 /// back to egui's replacement glyph) without panicking; Latin text is unaffected.
 #[test]

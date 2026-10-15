@@ -48,6 +48,7 @@ pub struct DateLanguage {
 }
 
 const CJK_MONTHS: [&str; 12] = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+const KO_MONTHS: [&str; 12] = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 const ZH_MONTHS: [&str; 12] = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
 const ZH_DAYS: [&str; 7] = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
 
@@ -56,7 +57,7 @@ const AR_DAYS: [&str; 7] = ["الأحد", "الاثنين", "الثلاثاء", 
 
 /// The languages month and weekday names can be written in (Preferences ▸ Date format ▸ Language):
 /// the interface languages, in the same order and with the same names.
-pub static DATE_LANGUAGES: [DateLanguage; 23] = [
+pub static DATE_LANGUAGES: [DateLanguage; 24] = [
     DateLanguage {
         code: "en",
         name: "English",
@@ -398,6 +399,15 @@ pub static DATE_LANGUAGES: [DateLanguage; 23] = [
         days: ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"],
         days_short: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
     },
+    DateLanguage {
+        code: "ko",
+        name: "한국어",
+        months: KO_MONTHS,
+        months_with_day: None,
+        months_short: KO_MONTHS,
+        days: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+        days_short: ["일", "월", "화", "수", "목", "금", "토"],
+    },
 ];
 
 /// The date language for `code` (any case), or `None` when there's none.
@@ -406,13 +416,14 @@ pub fn date_language(code: &str) -> Option<&'static DateLanguage> {
 }
 
 /// The characters of `text` that Fill & Sign can't write into a PDF yet, each once. Its text is
-/// drawn in Helvetica with WinAnsi encoding (Western European letters), so anything else (`ř`,
-/// Japanese, Chinese) would become `?` in the file.
+/// drawn in Helvetica with WinAnsi encoding (Western European letters), and Korean as outlines of
+/// the craft-fonts Korean face when the build has one, so anything else (`ř`, Japanese, Chinese)
+/// would become `?` in the file.
 pub fn unwritable(text: &str) -> String {
     let mut out = String::new();
     for c in text.chars() {
         let mut buf = [0u8; 4];
-        if c != '?' && pdfcraft_fonts::win_ansi(c.encode_utf8(&mut buf)) == b"?" && !out.contains(c) {
+        if c != '?' && pdfcraft_fonts::first_unoutlinable(c.encode_utf8(&mut buf)).is_some() && !out.contains(c) {
             out.push(c);
         }
     }
@@ -574,7 +585,7 @@ impl Session {
         match unwritable(&text) {
             bad if bad.is_empty() => Ok(text),
             bad => Err(format!(
-                "\"{text}\" can't be written into the PDF yet: Fill & Sign text is Western European only ({bad}); pick a numeric format such as dd.mm.yyyy"
+                "\"{text}\" can't be written into the PDF yet: Fill & Sign text is Western European (and Korean) only ({bad}); pick a numeric format such as dd.mm.yyyy"
             )),
         }
     }
@@ -701,6 +712,8 @@ mod tests {
         assert_eq!(in_lang("yyyy\\年mmmmd\\日 dddd", "ja"), "2026年3月7日 土曜日");
         assert_eq!(in_lang("yyyy\\年mmmmd\\日 dddd", "zh-hans"), "2026年三月7日 星期六");
         assert_eq!(in_lang("ddd", "zh-hant"), "週六");
+        assert_eq!(in_lang("yyyy년 mmmm d일 dddd", "ko"), "2026년 3월 7일 토요일");
+        assert_eq!(in_lang("yyyy. m. d. (ddd)", "ko"), "2026. 3. 7. (토)");
         assert_eq!(date_language("PT-BR").map(|l| l.code), Some("pt-br"));
         assert!(date_language("xx").is_none());
         for l in &DATE_LANGUAGES {
@@ -773,5 +786,13 @@ mod tests {
         assert!(e.contains("火曜日") && e.contains("can't be written into the PDF yet"), "{e}");
         assert!(s.today_text_for_pdf(Some("dd.mm.yyyy"), Some("ja")).is_ok(), "numbers are fine in any language");
         assert!(s.today_text_for_pdf(Some("yyyy\\年mm\\月"), Some("ja")).unwrap_err().contains("年月"));
+        // Korean is drawn with the craft-fonts Korean face, when the build has one.
+        let korean = s.today_text_for_pdf(Some("yyyy년 m월 d일 dddd"), Some("ko"));
+        if pdfcraft_fonts::document_korean_fonts_for_style(false, false).is_empty() {
+            assert!(korean.unwrap_err().contains("can't be written into the PDF yet"));
+        } else {
+            assert_eq!(korean.as_deref(), Ok("2023년 11월 14일 화요일"));
+            assert_eq!(unwritable("2026년 10월 8일 목요일"), "");
+        }
     }
 }
