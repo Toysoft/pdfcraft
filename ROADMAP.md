@@ -2,6 +2,7 @@
 
 **Stage: alpha** · next: beta, ~25% (ready for real work 50% → 75%) and ~400–700 h away
 
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** patch (M10/M14, PR #2025: translate the default paper name in every catalog; estimates unchanged)
 > **Last reviewed:** 2026-10-14 · **Last updated:** 2026-10-14 · **Change:** minor (M13: CLI extraction fixtures preserve required xref whitespace without trailing source spaces; behavior and estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-14 · **Change:** minor (M14: the Italian catalog has every entry the other catalogs had and the code looks up; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-14 · **Last updated:** 2026-10-14 · **Change:** minor (M3 #2080 candidate: explicit search jumps join per-tab history; rail and control-channel Back/Forward; estimates unchanged)
@@ -157,6 +158,8 @@ Ranked; detail and the full milestone table in [docs/roadmap.md](docs/roadmap.md
 | 8 | 1.0 polish: performance, right-to-left, missing languages, keyboard-only (M14) | 55–95 |
 
 ## Progress log
+
+- **2026-10-15 (M10/M14, PR #2025 CI follow-up):** Linux and Windows exposed the missing `US Letter` catalog entry after the custom-paper UI made its fallback an explicit translation lookup. Add the default paper name to all 22 non-English catalogs and a regression that checks every catalog. 435 UI-library/print-interface tests and scoped quality gates pass; one existing test stays ignored. Scope and estimates unchanged.
 
 - **2026-10-15 (M0/M10, PR #2025 refresh):** Rebased onto main with rustls 0.23.46, passing advisories, bans, licenses and sources. Existing CLI ranges, Organize-current-page and #1968 highlight fixes are already upstream; retained custom PDF-paper fixes while preserving newer image/label printing, A6 and localization. 359 focused regressions and the dependency, formatting, Clippy, layer, asset, parity and scoped WASM gates pass. Physical printer validation remains outstanding; estimates unchanged.
 - **2026-10-13 (community, M3, #1569 review):** Pixel-only Wayland wheel, wheel-tilt and continuous input use standalone moved events, so Ctrl zoom does not remain latched after the modifier is released (#991); vendored winit patch (13), with a policy test. Estimates unchanged.
@@ -494,6 +497,7 @@ Newest first: the date, what moved, and the new overall estimate.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | patch | PR #2025: translate `US Letter` in all 22 non-English catalogs and guard every catalog against fallback to English; fixes the shared Linux/Windows localization failure. Estimates unchanged. |
 | 2026-10-12 | minor | M6: valid AcroForm XML element names with original PDF field names preserved; saved-PDF collision and Unicode regressions. Estimates unchanged. |
 | 2026-10-12 | minor | M6: preserve carriage returns in exported CSV field names and values; saved-PDF round-trip coverage. Estimates unchanged. |
 | 2026-10-13 | minor | M4: Insert-from-file preserves source bookmarks; integration tests retained with current main. Estimates unchanged. |
