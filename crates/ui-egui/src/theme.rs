@@ -224,6 +224,8 @@ pub const SYSTEM_TELUGU_FALLBACK: &str = "system-telugu-fallback";
 pub const SYSTEM_SINHALA_FALLBACK: &str = "system-sinhala-fallback";
 /// The name of the installed Tamil face [`installed_font_definitions`] may add.
 pub const SYSTEM_TAMIL_FALLBACK: &str = "system-tamil-fallback";
+/// The name of the installed Korean face [`installed_font_definitions`] may add.
+pub const SYSTEM_KOREAN_FALLBACK: &str = "system-korean-fallback";
 
 /// What [`install_fonts_for`] installs: [`font_definitions_for`], then, on desktop, one face
 /// already installed on this machine. It only draws characters no embedded face has.
@@ -236,9 +238,10 @@ pub const SYSTEM_TAMIL_FALLBACK: &str = "system-tamil-fallback";
 /// - Otherwise it is the last fallback of every family (an Arabic file name in a build without
 ///   craft-fonts).
 ///
-/// Installed Devanagari, Telugu, Sinhala and Tamil faces, when there are, end every family just
-/// before that one, so Hindi, Telugu (#1531), Sinhala and Tamil (#1688) text, such as a file
-/// name, draws in a build without such faces.
+/// Installed Devanagari, Telugu, Sinhala and Tamil faces, and an installed Korean face while
+/// craft-fonts has no `Kore` face, when there are, end every family just before that one, so
+/// Hindi, Telugu (#1531), Sinhala and Tamil (#1688) and Korean text, such as a file name, draws
+/// in a build without such faces.
 ///
 /// `PDFCRAFT_SYSTEM_FONTS=0` leaves them out.
 pub fn installed_font_definitions(cjk: CjkPreference) -> FontDefinitions {
@@ -248,11 +251,13 @@ pub fn installed_font_definitions(cjk: CjkPreference) -> FontDefinitions {
     {
         use crate::system_fonts::{Need, fallback};
         // Before the general installed face, which stays the last fallback outside Chinese.
+        let korean = if pdfcraft_fonts::ui_korean_fonts().is_empty() { crate::system_fonts::korean_fallback() } else { None };
         for (name, data) in [
             (SYSTEM_DEVANAGARI_FALLBACK, crate::system_fonts::devanagari_fallback()),
             (SYSTEM_TELUGU_FALLBACK, crate::system_fonts::telugu_fallback()),
             (SYSTEM_SINHALA_FALLBACK, crate::system_fonts::sinhala_fallback()),
             (SYSTEM_TAMIL_FALLBACK, crate::system_fonts::tamil_fallback()),
+            (SYSTEM_KOREAN_FALLBACK, korean),
         ] {
             let Some(data) = data else { continue };
             fonts.font_data.insert(name.to_owned(), data);
@@ -282,9 +287,9 @@ pub fn installed_font_definitions(cjk: CjkPreference) -> FontDefinitions {
 }
 
 /// The interface fonts: Inter (and JetBrains Mono for code) first, then egui's defaults, then
-/// the CJK, Arabic, Telugu, Hebrew and Thai faces of the optional craft-fonts build input as the
-/// last fallback in every family. Without craft-fonts there is no Japanese, Chinese, Arabic,
-/// Telugu, Hebrew or Thai face here.
+/// the CJK, Arabic, Telugu, Hebrew, Thai and Korean faces of the optional craft-fonts build input
+/// as the last fallback in every family. Without craft-fonts there is no Japanese, Chinese,
+/// Arabic, Telugu, Hebrew, Thai or Korean face here.
 pub fn font_definitions() -> FontDefinitions {
     font_definitions_for(false)
 }
@@ -379,13 +384,14 @@ fn font_definitions_for_platform(prefer_hans: bool, platform: FontPolicyPlatform
         }
     }
     // Arabic-script faces (file names, document titles), Telugu faces (the Telugu interface,
-    // file names), Hebrew faces (file names, text being edited) and Thai faces after the CJK ones; the
-    // ranges don't overlap.
+    // file names), Hebrew faces (file names, text being edited), Thai faces and Korean faces after
+    // the CJK ones. Hangul is in none of the CJK faces, so the Korean faces need not lead them.
     for face in pdfcraft_fonts::ui_arabic_fonts()
         .into_iter()
         .chain(pdfcraft_fonts::ui_telugu_fonts())
         .chain(pdfcraft_fonts::ui_hebrew_fonts())
         .chain(pdfcraft_fonts::ui_thai_fonts())
+        .chain(pdfcraft_fonts::ui_korean_fonts())
     {
         let name = face.name();
         if !fonts.font_data.contains_key(&name) {

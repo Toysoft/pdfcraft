@@ -71,6 +71,13 @@ pub fn ui_thai_fonts() -> Vec<&'static CraftFont> {
     CRAFT_FONTS.iter().filter(|f| f.covers("Thai")).collect()
 }
 
+/// The `Kore` craft-fonts faces for Korean interface text (the Korean catalog, file names,
+/// document titles), in manifest order. Empty when built without craft-fonts or when it has no
+/// Korean face (the desktop app then falls back to an installed Korean face).
+pub fn ui_korean_fonts() -> Vec<&'static CraftFont> {
+    CRAFT_FONTS.iter().filter(|f| f.covers("Kore")).collect()
+}
+
 pub fn document_thai_font() -> Option<&'static CraftFont> {
     ui_thai_fonts().into_iter().next()
 }

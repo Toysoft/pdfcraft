@@ -33,6 +33,9 @@ set). Without that variable `CRAFT_FONTS` is empty and everything below copes:
   titles), in manifest order.
 - `ui_telugu_fonts`: the `Telu` faces for Telugu interface text (the Telugu catalog, file names,
   document titles), in manifest order.
+- `ui_korean_fonts`: the `Kore` faces for Korean interface text (the Korean catalog, file names,
+  document titles), in manifest order. Empty until craft-fonts carries one; the desktop app then
+  draws Hangul with an installed Korean face.
 - `ui_hebrew_fonts` / `document_hebrew_font(bold)`: the `Hebr` faces (Noto Sans Hebrew) for
   Hebrew interface text, and the face whose outlines become the Type 3 fallback for Hebrew text
   written by Edit text (Bold when asked for and present, else Regular). `None` without a
