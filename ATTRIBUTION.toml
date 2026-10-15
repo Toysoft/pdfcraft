@@ -140,7 +140,7 @@ licence = "MIT OR Apache-2.0"
 licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "Russian UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
-sha256 = "277f4995a87297a2fcc473df1feebdbdf3378fa460a7f85eb1a0a151cee40a2b"
+sha256 = "2002d05324adc2174fe22416455666fb2083a64f1db2f0be42de2407adc23074"
 
 [[asset]]
 path = "crates/ui-egui/src/i18n/hu.tsv"
@@ -229,6 +229,50 @@ licence_file = "LICENSE-MIT"
 kind = "translation"
 usage = "Lithuanian UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
 sha256 = "fe58835b0538f470b463f078e1b4cdf78a8e2632056bc61c6946071478f39a64"
+
+[[asset]]
+path = "crates/ui-egui/src/i18n/id.tsv"
+title = "Indonesian interface translation catalog"
+author = "PdfCraft contributors"
+source = "Contributor-original: clean-room translations of PdfCraft's English UI labels, no proprietary localisation resources"
+licence = "MIT OR Apache-2.0"
+licence_file = "LICENSE-MIT"
+kind = "translation"
+usage = "Indonesian UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
+sha256 = "136e7f8ce1d30076be01fa6d67a659eba7837ed69dc7f8e8888c2cfd89c2cbdf"
+
+[[asset]]
+path = "crates/ui-egui/src/i18n/vi.tsv"
+title = "Vietnamese interface translation catalog"
+author = "PdfCraft contributors"
+source = "Contributor-original: clean-room translations of PdfCraft's English UI labels, no proprietary localisation resources"
+licence = "MIT OR Apache-2.0"
+licence_file = "LICENSE-MIT"
+kind = "translation"
+usage = "Vietnamese UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
+sha256 = "1d98829ce0da091cdbc67d6a1b153a7a951abc6dffbad848ada3d0453a2d097c"
+
+[[asset]]
+path = "crates/ui-egui/src/i18n/hi.tsv"
+title = "Hindi interface translation catalog"
+author = "PdfCraft contributors"
+source = "Contributor-original: clean-room translations of PdfCraft's English UI labels, no proprietary localisation resources"
+licence = "MIT OR Apache-2.0"
+licence_file = "LICENSE-MIT"
+kind = "translation"
+usage = "Hindi UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
+sha256 = "f64f01d2514b017122b7394dcf31e90b8ec66e4ed36369ab476c1807e46c4593"
+
+[[asset]]
+path = "crates/ui-egui/src/i18n/ko.tsv"
+title = "Korean interface translation catalog"
+author = "PdfCraft contributors"
+source = "Contributor-original: clean-room translations of PdfCraft's English UI labels, no proprietary localisation resources"
+licence = "MIT OR Apache-2.0"
+licence_file = "LICENSE-MIT"
+kind = "translation"
+usage = "Korean UI strings, compiled in by crates/ui-egui/src/i18n/mod.rs"
+sha256 = "85d69348918b89340ead8810bfa2dccd22d2ddec07e83feaa0469c437d77116d"
 
 [[asset]]
 path = "assets/icons/accessibility.svg"
