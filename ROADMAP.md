@@ -2,7 +2,7 @@
 
 **Stage: alpha** · next: beta, ~25% (ready for real work 50% → 75%) and ~400–700 h away
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (M2/gap 12: Annex D.2 alias codes and reading-order scores; M6: JavaScript links, non-modal menus and annotation hover suppression; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (M2/gap 12: Annex D.2 alias codes and reading-order scores; M6: JavaScript links, menus and hover suppression synchronized with main 99941daa; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-14 · **Change:** minor (M14: the Italian catalog has every entry the other catalogs had and the code looks up; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-14 · **Last updated:** 2026-10-14 · **Change:** minor (M3 #2080 candidate: explicit search jumps join per-tab history; rail and control-channel Back/Forward; estimates unchanged)
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-13 · **Change:** minor (M4 #1910: Organize Pages opens on the current page; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
@@ -52,6 +52,10 @@ and add a line to the [progress log](#progress-log); when a gap closes, remove i
 [docs/gaps.md](docs/gaps.md); re-measure fully when a major arc lands, at least monthly.
 
 ## Headline numbers
+
+The breadth figures below are the 2026-10-10 snapshot documented in
+[target-app-parity.md](docs/target-app-parity.md#how-this-was-measured). Run `cargo xtask parity`
+for current checklist counts; readiness and effort remain estimates.
 
 | | Value | Kind |
 |---|---|---|
@@ -160,6 +164,7 @@ Ranked; detail and the full milestone table in [docs/roadmap.md](docs/roadmap.md
 
 ## Progress log
 
+- **2026-10-15 (M6, PR #2081 synchronization):** Rebased the JavaScript link and hover-suppression commits onto main 99941daa. Kept the maintainers' Annex D.2 decoding changes and reading-order oracle, together with the contribution's menu behavior and compatibility limits. Conflict resolution changes documentation only; historical measurements retain their dates and no new readiness estimate is claimed.
 - **2026-10-15 (M6, JavaScript menu hover):** Suppress JavaScript annotation tips from activation until the interaction ends, including queued workers; keep ordinary link/comment tips and make canvas tips pointer-transparent. Synthetic UI regressions reproduce the first-item overlap and cover suppression, restoration, first-item selection and preservation of other tips. Contextual anchors, one-click replacement and keyboard navigation retain their existing regressions. No interpreter/API changes; estimates unchanged.
 - **2026-10-15 (M6, PR #2081):** Reconciled JavaScript annotation actions and non-modal menus with main dc41044b, retaining selected-text Copy, per-tab navigation history and atomic-save paths. Added Back/Forward assertions to the menu-navigation regression. Link inspection now bounds retained JavaScript sources to 4 MiB per document and warns when the budget is reached, with a shared-action regression. Consolidated duplicate milestone rows without changing estimates; removed references to the unpublished local audit.
 - **2026-10-15 (M2, gap 12):** `cargo xtask text-oracle` scores reading order as well as word F1: the longest common subsequence of the two word sequences over the longer one. F1 is a bag of words and cannot see order at all -- measuring #2431, a change that moves text and nothing else, it called 26 of the 29 files whose output changed identical, where the order score separated 18 improvements from 6 regressions. Reports, does not gate; a disagreement with Poppler, not a verdict. Estimates unchanged.
