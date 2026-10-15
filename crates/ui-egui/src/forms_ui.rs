@@ -8,11 +8,12 @@
 
 use std::collections::HashSet;
 
-use egui::{Color32, CornerRadius, Rect, Stroke, vec2};
+use egui::{Color32, CornerRadius, Pos2, Rect, Stroke, vec2};
 use pdfcraft_engine::{Edit, FieldValue, FormField, FormFieldKind, FormWidget, field_flags, form_appearance};
 use pdfcraft_render::DocInfo;
 
 use crate::canvas::{DocView, PageXform};
+use crate::page_pointer::PagePointer;
 use crate::theme::Tokens;
 
 const FOCUS_BLUE: Color32 = Color32::from_rgb(0x14, 0x73, 0xE6);
@@ -112,14 +113,14 @@ pub(crate) fn page_input(
     ui: &egui::Ui,
     resp: &egui::Response,
     xf: &PageXform,
+    ptr: &PagePointer,
     page: usize,
     info: &DocInfo,
     form: &[FormField],
     allowed: bool,
     view: &mut DocView,
 ) -> FieldPointer {
-    let pointer = ui.input(|i| i.pointer.hover_pos());
-    let Some(p) = pointer.filter(|p| xf.rect.contains(*p)) else { return FieldPointer::Away };
+    let Some(p) = ptr.within(xf.rect) else { return FieldPointer::Away };
     let hit = form.iter().find_map(|f| {
         f.widgets
             .iter()
@@ -139,7 +140,7 @@ pub(crate) fn page_input(
     });
     // A text field opens on the press rather than the click, so a drag that starts on it
     // selects its text (#2213).
-    let pressed = f.kind == FormFieldKind::Text && usable && resp.is_pointer_button_down_on() && ui.input(|i| i.pointer.primary_pressed());
+    let pressed = f.kind == FormFieldKind::Text && usable && resp.is_pointer_button_down_on() && ptr.pressed().is_some();
     if pressed && view.forms.focus.as_ref().is_none_or(|x| x.name != f.name || x.widget != wi) {
         commit(view, form);
         view.forms.focus = Some(Focus { press: Some(p), ..open_focus(f, wi) });
@@ -175,7 +176,7 @@ pub(crate) fn page_input(
         // The press already committed the previous field and opened this one (above), unless
         // press and release came in one frame. Committing again would re-run a validation that
         // refused the value on the press.
-        FormFieldKind::Text if !ui.input(|i| i.pointer.primary_pressed()) => {
+        FormFieldKind::Text if ptr.pressed().is_none() => {
             // An editor opened by the press cannot be hit until a frame has laid it out: the
             // release lands on the page and would take its focus away.
             if let Some(x) = view.forms.focus.as_mut().filter(|x| x.name == f.name && x.widget == wi) {
@@ -336,9 +337,16 @@ fn calendar(ctx: &egui::Context, view: &mut DocView, field: egui::Rect, fmt: &st
     picked
 }
 
-/// Paint focus and hover frames on a page.
-pub(crate) fn paint_page(ui: &egui::Ui, painter: &egui::Painter, xf: &PageXform, page: usize, info: &DocInfo, form: &[FormField], view: &DocView) {
-    let pointer = ui.input(|i| i.pointer.hover_pos());
+/// Paint focus and hover frames on a page, the pages' `pointer` over it.
+pub(crate) fn paint_page(
+    painter: &egui::Painter,
+    xf: &PageXform,
+    page: usize,
+    info: &DocInfo,
+    form: &[FormField],
+    view: &DocView,
+    pointer: Option<Pos2>,
+) {
     for f in form {
         for (wi, w) in f.widgets.iter().enumerate().filter(|(_, w)| w.page == Some(page) && !w.hidden) {
             let r = widget_rect(xf, info, page, w.rect);
