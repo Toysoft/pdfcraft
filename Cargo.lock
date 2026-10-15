@@ -1143,9 +1143,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "craft-devices"
+version = "0.1.0"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F144%2Fhead#e5269908b28310c55dba270408ae122261d7ae84"
+dependencies = [
+ "craft-job",
+ "craft-scan",
+ "serde_json",
+]
+
+[[package]]
 name = "craft-job"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F114%2Fhead#4a71cd1afd6305d687c0a39de599ac7e57f8427a"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F144%2Fhead#e5269908b28310c55dba270408ae122261d7ae84"
 dependencies = [
  "serde",
 ]
@@ -1177,7 +1187,7 @@ dependencies = [
 [[package]]
 name = "craft-scan"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F114%2Fhead#4a71cd1afd6305d687c0a39de599ac7e57f8427a"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F144%2Fhead#e5269908b28310c55dba270408ae122261d7ae84"
 dependencies = [
  "craft-job",
  "image",
@@ -4015,6 +4025,7 @@ name = "pdfcraft-automation"
 version = "0.8.0"
 dependencies = [
  "base64 0.22.1",
+ "craft-devices",
  "flate2",
  "image",
  "pdfcraft-cos",
