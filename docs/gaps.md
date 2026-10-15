@@ -1,5 +1,7 @@
 # Where PdfCraft falls short of Acrobat Pro
 
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (Korean PR conflict refresh on upstream main dc41044b; common catalog and regression repairs retained from main; scoped verification repeated; readiness and effort estimates not re-measured) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
+> **Last reviewed:** 2026-10-14 · **Last updated:** 2026-10-14 · **Change:** minor (Korean desktop catalog, date names and installed Hangul fallback; readiness and hours not re-measured) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-12 · **Last updated:** 2026-10-13 · **Change:** minor (gap 14: Vietnamese catalog shipped; Hindi/Indonesian/Korean and Arabic RTL remain) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-13 · **Change:** minor (gap 6: #1910 Organize Pages opens on the current page; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-12 · **Last updated:** 2026-10-12 · **Change:** minor (gap 6: #1398 stamps read upright on rotated pages; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
@@ -40,7 +42,7 @@ update the numbers.
 | 11 | Accessibility: checker only, no tagging tools | feature | 40–70 | [target-app-parity.md](target-app-parity.md) |
 | 12 | No measured fidelity harness against Acrobat | quality | (in 2) | [target-app-parity.md](target-app-parity.md) |
 | 13 | Performance budgets and lazy loading of very large files | performance | 25–45 | this file |
-| 14 | Arabic not mirrored; no Hindi, Indonesian, Korean | localization | 25–45 | [localization-parity.md](localization-parity.md) |
+| 14 | Arabic not mirrored; no Hindi or Indonesian; Korean web font delivery | localization | 25–45 | [localization-parity.md](localization-parity.md) |
 | 15 | Forms: JavaScript object model, actions, submit, XFA depth | feature | 40–75 | [pdf-spec-parity.md](pdf-spec-parity.md) |
 | 16 | UI precision gaps (multi-select move, rulers, accelerators, windows) | UI/UX | 30–60 | [ui-parity.md](ui-parity.md) |
 | 17 | Certificate security and other protect gaps | feature, spec | 15–30 | [pdf-spec-parity.md](pdf-spec-parity.md) |
@@ -277,15 +279,18 @@ update the numbers.
   to edit.
 - **Estimate:** 25–45 h. **Doc:** this file.
 
-### 14. Arabic not mirrored; no Hindi, Indonesian, Korean
+### 14. Arabic not mirrored; no Hindi or Indonesian; Korean web font delivery
 
 - **Missing:** a right-to-left layout (panels, menus, alignment), bidirectional text in the text
-  layout itself (wrapping, typed text); catalogs for Hindi, Indonesian and Korean (Acrobat ships
-  Korean; it ships Arabic in its Middle East edition; it ships none of Hindi or Indonesian).
-  Vietnamese ships as a catalog (`vi`, 100% of the current localizable union) but stays `partial`
-  like other non-English languages (no translated help; engine/OS details stay English).
+  layout itself (wrapping, typed text); catalogs for Hindi and Indonesian (Acrobat ships neither;
+  it ships Korean and ships Arabic in its Middle East edition).
+  Vietnamese ships as a catalog (`vi`, 2,670 current entries), but stays
+  `partial` like other non-English languages (no translated help; engine/OS details stay English).
+  Its 63 integration repairs are AI-assisted and await native-speaker review.
+  Korean ships a desktop catalog, date names and installed interface-only Hangul fallback;
+  web font delivery, localized help and Korean PDF text writing remain separate work.
 - **Evidence:** [localization.md](localization.md) §Arabic; `misc.rtl-ui` planned.
-- **Estimate:** 25–45 h (Arabic RTL 20–35, three catalogs 8–12 plus review). **Doc:**
+- **Estimate:** 25–45 h (upstream estimate retained; not re-measured after Korean and Vietnamese catalogs). **Doc:**
   [localization-parity.md](localization-parity.md).
 
 ### 15. Forms: JavaScript object model, actions, submit, XFA depth
@@ -366,6 +371,9 @@ update the numbers.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | patch | Refreshed the Korean PR against `dc41044b`, retaining upstream common catalog and page-draft/Monospace regressions. 929 scoped native tests passed, 2 ignored; three batched assertion probes verified. Korean retains 2,670 keys; historical `afa8e184` verification and estimates are unchanged. |
+| 2026-10-15 | minor | Reconciled Korean desktop coverage with the upstream Vietnamese catalog. Gap 14 now records Hindi/Indonesian catalogs, Arabic RTL and Korean web font delivery as remaining work. Post-integration scoped verification passed on `afa8e184`; estimates unchanged. |
+| 2026-10-14 | minor | Korean desktop catalog covers 2,592 current keys; date names and installed interface-only Hangul fallback added. Web font delivery, localized help and Korean PDF writing remain separate. Weighted readiness and hours not re-measured. |
 | 2026-10-15 | patch | Gap 24: record localization and installers as partial (unusable Chinese, Telugu and Arabic; unsigned Linux packages) |
 | 2026-10-13 | minor | Gap 6: Organize Pages selects and reveals the current page on open, including after an earlier grid selection elsewhere (#1910). Estimates unchanged. |
 | 2026-10-12 | minor | Gap 6: rubber stamps, explicit image rectangles and PDF-page stamps read upright on rotated pages (#1398). Estimates unchanged. |
