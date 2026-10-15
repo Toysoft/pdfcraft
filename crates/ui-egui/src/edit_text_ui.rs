@@ -136,6 +136,367 @@ impl TextBackground {
 /// hit-testing still covers every image, so nothing becomes unselectable.
 const MAX_OUTLINES: usize = 250;
 
+pub fn is_bulleted(text: &str) -> bool {
+    let mut lines = text.lines();
+    let Some(first) = lines.next() else { return false };
+    first.trim_start().starts_with("• ") || first.trim_start().starts_with("- ")
+}
+
+pub fn is_numbered(text: &str) -> bool {
+    let mut lines = text.lines();
+    let Some(first) = lines.next() else { return false };
+    let t = first.trim_start();
+    let num_end = t.find('.').unwrap_or(0);
+    num_end > 0 && t[..num_end].chars().all(|c| c.is_ascii_digit()) && t[num_end..].starts_with(". ")
+}
+
+pub fn toggle_bullet_list(text: &mut String) -> bool {
+    let lines: Vec<&str> = text.lines().collect();
+    if lines.is_empty() {
+        return false;
+    }
+    let all_bulleted = lines.iter().all(|l| {
+        let t = l.trim_start();
+        t.is_empty() || t.starts_with("• ") || t.starts_with("- ")
+    });
+    let mut new_text = String::with_capacity(text.len() + 16);
+    for (i, line) in lines.iter().enumerate() {
+        if i > 0 {
+            new_text.push('\n');
+        }
+        let trimmed = line.trim_start();
+        if all_bulleted {
+            if let Some(rest) = trimmed.strip_prefix("• ").or_else(|| trimmed.strip_prefix("- ")) {
+                new_text.push_str(rest);
+            } else {
+                new_text.push_str(line);
+            }
+        } else if trimmed.is_empty() || trimmed.starts_with("• ") {
+            new_text.push_str(line);
+        } else {
+            new_text.push_str("• ");
+            new_text.push_str(line);
+        }
+    }
+    if new_text != *text {
+        *text = new_text;
+        true
+    } else {
+        false
+    }
+}
+
+pub fn toggle_numbered_list(text: &mut String) -> bool {
+    let lines: Vec<&str> = text.lines().collect();
+    if lines.is_empty() {
+        return false;
+    }
+    let is_num_line = |l: &str| {
+        let t = l.trim_start();
+        if t.is_empty() {
+            return true;
+        }
+        let dot_idx = t.find('.').unwrap_or(0);
+        dot_idx > 0 && t[..dot_idx].chars().all(|c| c.is_ascii_digit()) && t[dot_idx..].starts_with(". ")
+    };
+    let all_numbered = lines.iter().all(|l| is_num_line(l));
+    let mut new_text = String::with_capacity(text.len() + 16);
+    let mut num = 1;
+    for (i, line) in lines.iter().enumerate() {
+        if i > 0 {
+            new_text.push('\n');
+        }
+        let t = line.trim_start();
+        if all_numbered {
+            if let Some(dot_idx) = t.find('.')
+                && dot_idx > 0
+                && t[..dot_idx].chars().all(|c| c.is_ascii_digit())
+                && t[dot_idx..].starts_with(". ")
+            {
+                new_text.push_str(&t[dot_idx + 2..]);
+                continue;
+            }
+            new_text.push_str(line);
+        } else if t.is_empty() {
+            new_text.push_str(line);
+        } else {
+            use std::fmt::Write as _;
+            let _ = write!(new_text, "{num}. ");
+            new_text.push_str(t);
+            num += 1;
+        }
+    }
+    if new_text != *text {
+        *text = new_text;
+        true
+    } else {
+        false
+    }
+}
+
+pub fn char_to_superscript(c: char) -> char {
+    match c {
+        '0' => '⁰',
+        '1' => '¹',
+        '2' => '²',
+        '3' => '³',
+        '4' => '⁴',
+        '5' => '⁵',
+        '6' => '⁶',
+        '7' => '⁷',
+        '8' => '⁸',
+        '9' => '⁹',
+        '+' => '⁺',
+        '-' | '−' => '⁻',
+        '=' => '⁼',
+        '(' => '⁽',
+        ')' => '⁾',
+        'a' => 'ᵃ',
+        'b' => 'ᵇ',
+        'c' => 'ᶜ',
+        'd' => 'ᵈ',
+        'e' => 'ᵉ',
+        'f' => 'ᶠ',
+        'g' => 'ᵍ',
+        'h' => 'ʰ',
+        'i' => 'ⁱ',
+        'j' => 'ʲ',
+        'k' => 'ᵏ',
+        'l' => 'ˡ',
+        'm' => 'ᵐ',
+        'n' => 'ⁿ',
+        'o' => 'ᵒ',
+        'p' => 'ᵖ',
+        'r' => 'ʳ',
+        's' => 'ˢ',
+        't' => 'ᵗ',
+        'u' => 'ᵘ',
+        'v' => 'ᵛ',
+        'w' => 'ʷ',
+        'x' => 'ˣ',
+        'y' => 'ʸ',
+        'z' => 'ᶻ',
+        'A' => 'ᴬ',
+        'B' => 'ᴮ',
+        'D' => 'ᴰ',
+        'E' => 'ᴱ',
+        'G' => 'ᴳ',
+        'H' => 'ᴴ',
+        'I' => 'ᴵ',
+        'J' => 'ᴶ',
+        'K' => 'ᴷ',
+        'L' => 'ᴸ',
+        'M' => 'ᴹ',
+        'N' => 'ᴺ',
+        'O' => 'ᴼ',
+        'P' => 'ᴾ',
+        'R' => 'ᴿ',
+        'T' => 'ᵀ',
+        'U' => 'ᵁ',
+        'V' => 'ⱽ',
+        'W' => 'ᵂ',
+        other => other,
+    }
+}
+
+pub fn char_from_superscript(c: char) -> char {
+    match c {
+        '⁰' => '0',
+        '¹' => '1',
+        '²' => '2',
+        '³' => '3',
+        '⁴' => '4',
+        '⁵' => '5',
+        '⁶' => '6',
+        '⁷' => '7',
+        '⁸' => '8',
+        '⁹' => '9',
+        '⁺' => '+',
+        '⁻' => '-',
+        '⁼' => '=',
+        '⁽' => '(',
+        '⁾' => ')',
+        'ᵃ' => 'a',
+        'ᵇ' => 'b',
+        'ᶜ' => 'c',
+        'ᵈ' => 'd',
+        'ᵉ' => 'e',
+        'ᶠ' => 'f',
+        'ᵍ' => 'g',
+        'ʰ' => 'h',
+        'ⁱ' => 'i',
+        'ʲ' => 'j',
+        'ᵏ' => 'k',
+        'ˡ' => 'l',
+        'ᵐ' => 'm',
+        'ⁿ' => 'n',
+        'ᵒ' => 'o',
+        'ᵖ' => 'p',
+        'ʳ' => 'r',
+        'ˢ' => 's',
+        'ᵗ' => 't',
+        'ᵘ' => 'u',
+        'ᵛ' => 'v',
+        'ʷ' => 'w',
+        'ˣ' => 'x',
+        'ʸ' => 'y',
+        'ᶻ' => 'z',
+        'ᴬ' => 'A',
+        'ᴮ' => 'B',
+        'ᴰ' => 'D',
+        'ᴱ' => 'E',
+        'ᴳ' => 'G',
+        'ᴴ' => 'H',
+        'ᴵ' => 'I',
+        'ᴶ' => 'J',
+        'ᴷ' => 'K',
+        'ᴸ' => 'L',
+        'ᴹ' => 'M',
+        'ᴺ' => 'N',
+        'ᴼ' => 'O',
+        'ᴾ' => 'P',
+        'ᴿ' => 'R',
+        'ᵀ' => 'T',
+        'ᵁ' => 'U',
+        'ⱽ' => 'V',
+        'ᵂ' => 'W',
+        other => other,
+    }
+}
+
+pub fn char_to_subscript(c: char) -> char {
+    match c {
+        '0' => '₀',
+        '1' => '₁',
+        '2' => '₂',
+        '3' => '₃',
+        '4' => '₄',
+        '5' => '₅',
+        '6' => '₆',
+        '7' => '₇',
+        '8' => '₈',
+        '9' => '₉',
+        '+' => '₊',
+        '-' | '−' => '₋',
+        '=' => '₌',
+        '(' => '₍',
+        ')' => '₎',
+        'a' => 'ₐ',
+        'e' => 'ₑ',
+        'h' => 'ₕ',
+        'i' => 'ᵢ',
+        'j' => 'ⱼ',
+        'k' => 'ₖ',
+        'l' => 'ₗ',
+        'm' => 'ₘ',
+        'n' => 'ₙ',
+        'o' => 'ₒ',
+        'p' => 'ₚ',
+        'r' => 'ᵣ',
+        's' => 'ₛ',
+        't' => 'ₜ',
+        'u' => 'ᵤ',
+        'v' => 'ᵥ',
+        'x' => 'ₓ',
+        other => other,
+    }
+}
+
+pub fn char_from_subscript(c: char) -> char {
+    match c {
+        '₀' => '0',
+        '₁' => '1',
+        '₂' => '2',
+        '₃' => '3',
+        '₄' => '4',
+        '₅' => '5',
+        '₆' => '6',
+        '₇' => '7',
+        '₈' => '8',
+        '₉' => '9',
+        '₊' => '+',
+        '₋' => '-',
+        '₌' => '=',
+        '₍' => '(',
+        '₎' => ')',
+        'ₐ' => 'a',
+        'ₑ' => 'e',
+        'ₕ' => 'h',
+        'ᵢ' => 'i',
+        'ⱼ' => 'j',
+        'ₖ' => 'k',
+        'ₗ' => 'l',
+        'ₘ' => 'm',
+        'ₙ' => 'n',
+        'ₒ' => 'o',
+        'ₚ' => 'p',
+        'ᵣ' => 'r',
+        'ₛ' => 's',
+        'ₜ' => 't',
+        'ᵤ' => 'u',
+        'ᵥ' => 'v',
+        'ₓ' => 'x',
+        other => other,
+    }
+}
+
+fn snap_char_boundaries(s: &str, start: usize, end: usize) -> (usize, usize) {
+    let mut s_idx = start.min(s.len());
+    while s_idx > 0 && !s.is_char_boundary(s_idx) {
+        s_idx -= 1;
+    }
+    let mut e_idx = end.min(s.len());
+    while e_idx < s.len() && !s.is_char_boundary(e_idx) {
+        e_idx += 1;
+    }
+    (s_idx, e_idx)
+}
+
+pub fn toggle_superscript(ed: &mut LineEditor) -> bool {
+    let (s_pos, e_pos) = if let Some(r) = &ed.selection { (r.start.min(ed.text.len()), r.end.min(ed.text.len())) } else { (0, ed.text.len()) };
+    let (start, end) = snap_char_boundaries(&ed.text, s_pos, e_pos);
+    if start >= end {
+        return false;
+    }
+    let target = &ed.text[start..end];
+    let all_sup = target.chars().all(|c| char_from_superscript(c) != c);
+    let converted: String =
+        if all_sup { target.chars().map(char_from_superscript).collect() } else { target.chars().map(char_to_superscript).collect() };
+    if converted != target {
+        let conv_len = converted.len();
+        ed.text.replace_range(start..end, &converted);
+        if ed.selection.is_some() {
+            ed.selection = Some(start..start + conv_len);
+        }
+        true
+    } else {
+        false
+    }
+}
+
+pub fn toggle_subscript(ed: &mut LineEditor) -> bool {
+    let (s_pos, e_pos) = if let Some(r) = &ed.selection { (r.start.min(ed.text.len()), r.end.min(ed.text.len())) } else { (0, ed.text.len()) };
+    let (start, end) = snap_char_boundaries(&ed.text, s_pos, e_pos);
+    if start >= end {
+        return false;
+    }
+    let target = &ed.text[start..end];
+    let all_sub = target.chars().all(|c| char_from_subscript(c) != c);
+    let converted: String = if all_sub { target.chars().map(char_from_subscript).collect() } else { target.chars().map(char_to_subscript).collect() };
+    if converted != target {
+        let conv_len = converted.len();
+        ed.text.replace_range(start..end, &converted);
+        if ed.selection.is_some() {
+            ed.selection = Some(start..start + conv_len);
+        }
+        true
+    } else {
+        false
+    }
+}
+
+/// Underline, value-based line spacing, paragraph spacing, character spacing and horizontal
+
 /// A paragraph being edited.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LineEditor {
@@ -349,15 +710,44 @@ pub(crate) fn editor_fill(text: Color32) -> Color32 {
     if contrast(text, Color32::WHITE) >= contrast(text, DARK_EDITOR_FILL) { Color32::WHITE } else { DARK_EDITOR_FILL }
 }
 
+/// The 8 resize handles on an image (4 corners + 4 edge centers).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ImageHandle {
+    TopLeft,
+    TopCenter,
+    TopRight,
+    RightCenter,
+    BottomRight,
+    BottomCenter,
+    BottomLeft,
+    LeftCenter,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DragTarget {
+    Move,
+    Handle(ImageHandle),
+    CropHandle(ImageHandle),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ImageDrag {
+    pub start: Pos2,
+    pub target: DragTarget,
+    pub initial_rect: Rect,
+}
+
 /// A selected page image, and what the pointer is doing to it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ImageSelection {
     pub page: usize,
     pub index: usize,
     /// Dragging: the start point and, for a corner, the opposite corner (screen).
-    drag: Option<(Pos2, Option<Pos2>)>,
+    pub drag: Option<(Pos2, Option<Pos2>)>,
     /// Crop mode (Acrobat's crop handles): the box kept so far.
     pub crop: Option<CropMode>,
+    pub crop_mode: bool,
+    pub crop_rect: Option<Rect>,
 }
 
 /// Cropping a page image: the handles trim instead of resizing, the part that will go is
@@ -398,7 +788,13 @@ fn crop_input(
     allow_interaction: bool,
 ) -> bool {
     let painter = ui.painter();
-    let Some(mode) = view.image_selection.as_mut().and_then(|s| s.crop.as_mut()) else { return false };
+    let Some(sel) = view.image_selection.as_mut() else { return false };
+    if let Some(rect) = sel.crop_rect
+        && let Some(mode) = sel.crop.as_mut()
+    {
+        mode.keep = user_box(xf, info, page, rect);
+    }
+    let Some(mode) = sel.crop.as_mut() else { return false };
     let hover_pos = ui.input(|inp| inp.pointer.hover_pos());
     let keep_screen = |keep: [f64; 4]| xf.user_rect(info, page, keep.map(|v| v as f32)).intersect(b);
     // A drag in progress moves a grip; the box stays inside the picture and at least 6 px.
@@ -515,6 +911,8 @@ fn crop_input(
         let keep = mode.keep;
         if let Some(s) = view.image_selection.as_mut() {
             s.crop = None;
+            s.crop_mode = false;
+            s.crop_rect = None;
         }
         if keep_screen(keep) != b {
             view.pending_edit = Some(Edit::EditPageImage { page, index: i, change: pdfcraft_engine::ImageEdit::Crop(keep) });
@@ -523,6 +921,8 @@ fn crop_input(
         && let Some(s) = view.image_selection.as_mut()
     {
         s.crop = None;
+        s.crop_mode = false;
+        s.crop_rect = None;
     }
     true
 }
@@ -618,6 +1018,10 @@ pub(crate) enum ImageAction {
     Link(usize, usize),
     /// Open Recognize Text for the picture's page.
     Recognize(usize),
+    Paste(usize, [f64; 4]),
+    DrawFreehand,
+    AddComment(usize, usize),
+    Crop,
 }
 
 fn user_box(xf: &PageXform, info: &DocInfo, page: usize, r: Rect) -> [f64; 4] {
@@ -637,7 +1041,7 @@ pub(crate) fn image_input(
     info: &DocInfo,
     images: &[pdfcraft_engine::PageImage],
     view: &mut DocView,
-    action: &mut Option<ImageAction>,
+    _action: &mut Option<ImageAction>,
     allow_interaction: bool,
 ) -> bool {
     let boxes: Vec<Rect> = images.iter().map(|im| im.visible_rect.map_or(Rect::NOTHING, |r| xf.user_rect(info, page, r.map(|v| v as f32)))).collect();
@@ -682,7 +1086,11 @@ pub(crate) fn image_input(
     // The selected image: frame, corner handles, dragging.
     if let Some(i) = selected.filter(|i| boxes.get(*i).is_some_and(|b| b.is_positive())) {
         let b = boxes[i];
-        if view.image_selection.as_ref().is_some_and(|s| s.crop.is_some()) {
+        if view.image_selection.as_ref().is_some_and(|s| s.crop.is_some() || s.crop_mode) {
+            if let Some(s) = view.image_selection.as_mut() && s.crop.is_none() {
+                let rect = images.get(i).and_then(|im| im.visible_rect).unwrap_or(images.get(i).map_or([0.0; 4], |im| im.rect));
+                s.crop = Some(CropMode::new(rect));
+            }
             return crop_input(ui, resp, xf, page, info, view, i, b, allow_interaction);
         }
         let corners = [b.left_top(), b.right_top(), b.left_bottom(), b.right_bottom()];
@@ -810,16 +1218,13 @@ pub(crate) fn image_input(
     if resp.secondary_clicked() {
         ui.ctx().data_mut(|d| d.insert_temp(menu_key, false));
     }
-    let mut menu_drawn = false;
-    if let Some(sel) = selected
-        && resp.context_menu_opened()
-        && ui.ctx().data(|d| d.get_temp::<bool>(menu_key)).unwrap_or(false)
-    {
-        resp.context_menu(|ui| image_menu(ui, page, sel, images, view, action));
-        menu_drawn = true;
-    }
     let Some(p) = hover_pos.filter(|p| xf.rect.contains(*p)) else { return false };
-    let Some(hit) = boxes.iter().enumerate().rposition(|(i, b)| b.contains(p) && image_contains(i, p)) else { return false };
+    let Some(hit) = boxes.iter().enumerate().rposition(|(i, b)| b.contains(p) && image_contains(i, p)) else {
+        if resp.secondary_clicked() || resp.clicked() {
+            view.image_selection = None;
+        }
+        return false;
+    };
     if selected != Some(hit) {
         painter.rect_stroke(boxes[hit], CornerRadius::ZERO, Stroke::new(1.5, ACCENT.gamma_multiply(0.7)), egui::StrokeKind::Outside);
     }
@@ -832,64 +1237,57 @@ pub(crate) fn image_input(
         _ => egui::CursorIcon::PointingHand,
     });
     if resp.clicked() || resp.secondary_clicked() {
-        view.image_selection = Some(ImageSelection { page, index: hit, drag: None, crop: None });
+        view.image_selection = Some(ImageSelection { page, index: hit, drag: None, crop: None, crop_mode: false, crop_rect: None });
     }
     if resp.secondary_clicked() {
         ui.ctx().data_mut(|d| d.insert_temp(menu_key, true));
     }
-    if selected == Some(hit) && !menu_drawn {
-        resp.context_menu(|ui| image_menu(ui, page, hit, images, view, action));
-    }
     true
 }
 
-/// The right-click menu of the picture `hit` (its rotate, flip, replace, copy, cut, redact, link,
-/// recognize and delete items).
-fn image_menu(
+/// The right-click context menu for a selected image matching Adobe Acrobat.
+pub(crate) fn image_context_menu(
     ui: &mut egui::Ui,
+    view: &mut DocView,
+    images: &[pdfcraft_engine::PageImage],
     page: usize,
     hit: usize,
-    images: &[pdfcraft_engine::PageImage],
-    view: &mut DocView,
+    can_paste: bool,
     action: &mut Option<ImageAction>,
 ) {
+    let Some(img) = images.get(hit) else { return };
     use pdfcraft_engine::ImageEdit as E;
-    let items: [(&str, Option<E>); 4] = [
-        (tl!("Rotate Clockwise"), Some(E::Rotate(1))),
-        (tl!("Rotate Counterclockwise"), Some(E::Rotate(3))),
-        (tl!("Flip Horizontal"), Some(E::Flip { horizontal: true })),
-        (tl!("Flip Vertical"), Some(E::Flip { horizontal: false })),
-    ];
-    for (label, change) in items {
-        if ui.button(label).clicked() {
-            view.pending_edit = change.map(|c| Edit::EditPageImage { page, index: hit, change: c });
+
+    // Top horizontal icon bar: Comment, Crop, Rotate CCW, Rotate CW
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+        if crate::icons::button(ui, "message-square", 24.0, false, tl!("Add a sticky note here")).clicked() {
+            *action = Some(ImageAction::AddComment(page, hit));
             ui.close();
         }
-    }
-    // Crop: the handles trim instead of resizing until Done.
-    if ui.button(tl!("Crop Image")).clicked() {
-        if let (Some(s), Some(im)) = (view.image_selection.as_mut(), images.get(hit)) {
-            s.crop = Some(CropMode::new(im.visible_rect.unwrap_or(im.rect)));
+        if crate::icons::button(ui, "crop", 24.0, false, tl!("Crop")).clicked() {
+            *action = Some(ImageAction::Crop);
+            if let Some(s) = view.image_selection.as_mut() {
+                let rect = img.visible_rect.unwrap_or(img.rect);
+                s.crop = Some(CropMode::new(rect));
+                s.crop_mode = true;
+                s.crop_rect = None;
+            }
+            ui.close();
         }
-        ui.close();
-    }
-    let cropped = images.get(hit).is_some_and(|im| im.visible_rect.is_some_and(|v| v.iter().zip(im.rect.iter()).any(|(a, b)| (a - b).abs() > 0.01)));
-    if ui.add_enabled(cropped, egui::Button::new(tl!("Remove Crop"))).clicked() {
-        if let Some(im) = images.get(hit) {
-            view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Crop(im.rect) });
+        if crate::icons::button(ui, "rotate-ccw", 24.0, false, tl!("Rotate Counterclockwise")).clicked() {
+            view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Rotate(3) });
+            ui.close();
         }
-        ui.close();
-    }
-    let raster = images.get(hit).is_some_and(|image| !image.is_form);
-    if ui.add_enabled(raster, egui::Button::new(tl!("Replace Image…"))).clicked() {
-        *action = Some(ImageAction::Replace(page, hit));
-        ui.close();
-    }
-    if ui.add_enabled(raster, egui::Button::new(tl!("Save Image As…"))).clicked() {
-        *action = Some(ImageAction::Save(page, hit));
-        ui.close();
-    }
-    // Cutting and copying also find the picture inside grouped Form artwork.
+        if crate::icons::button(ui, "rotate-cw", 24.0, false, tl!("Rotate Clockwise")).clicked() {
+            view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Rotate(1) });
+            ui.close();
+        }
+    });
+
+    ui.separator();
+
+    let raster = !img.is_form;
     if ui.button(tl!("Cut Image")).clicked() {
         *action = Some(ImageAction::Cut(page, hit));
         ui.close();
@@ -898,24 +1296,102 @@ fn image_menu(
         *action = Some(ImageAction::Copy(page, hit));
         ui.close();
     }
-    if ui.button(tl!("Copy Image in Original Format")).clicked() {
-        *action = Some(ImageAction::CopyFile(page, hit));
+    if ui.add_enabled(can_paste, egui::Button::new(tl!("Paste"))).clicked() {
+        *action = Some(ImageAction::Paste(page, img.rect));
         ui.close();
     }
+
     ui.separator();
+
+    let is_cropped = img.visible_rect.is_some() && img.visible_rect != Some(img.rect);
+    if ui.add_enabled(is_cropped, egui::Button::new(tl!("Remove crop"))).clicked() {
+        view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::RemoveCrop });
+        ui.close();
+    }
+
+    if ui.button(tl!("Flip horizontal")).clicked() {
+        view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Flip { horizontal: true } });
+        ui.close();
+    }
+    if ui.button(tl!("Flip vertical")).clicked() {
+        view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Flip { horizontal: false } });
+        ui.close();
+    }
+
+    ui.menu_button(tl!("Arrange image"), |ui| {
+        let total = images.len();
+        if ui.button(tl!("Bring to front")).clicked() {
+            view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Arrange(pdfcraft_engine::ArrangeOrder::BringToFront) });
+            if let Some(s) = view.image_selection.as_mut() {
+                s.index = total.saturating_sub(1);
+            }
+            ui.close();
+        }
+        if ui.button(tl!("Send to back")).clicked() {
+            view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Arrange(pdfcraft_engine::ArrangeOrder::SendToBack) });
+            if let Some(s) = view.image_selection.as_mut() {
+                s.index = 0;
+            }
+            ui.close();
+        }
+        if ui.button(tl!("Bring forward")).clicked() {
+            view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Arrange(pdfcraft_engine::ArrangeOrder::BringForward) });
+            if let Some(s) = view.image_selection.as_mut() {
+                s.index = (hit + 1).min(total.saturating_sub(1));
+            }
+            ui.close();
+        }
+        if ui.button(tl!("Send backward")).clicked() {
+            view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Arrange(pdfcraft_engine::ArrangeOrder::SendBackward) });
+            if let Some(s) = view.image_selection.as_mut() {
+                s.index = hit.saturating_sub(1);
+            }
+            ui.close();
+        }
+    });
+
+    if ui.add_enabled(raster, egui::Button::new(tl!("Replace image"))).clicked() {
+        *action = Some(ImageAction::Replace(page, hit));
+        ui.close();
+    }
+    if ui.add_enabled(raster, egui::Button::new(tl!("Save Image As…"))).clicked() {
+        *action = Some(ImageAction::Save(page, hit));
+        ui.close();
+    }
+
+    ui.separator();
+
+    if ui.button(tl!("Draw freehand")).clicked() {
+        *action = Some(ImageAction::DrawFreehand);
+        ui.close();
+    }
     if ui.button(tl!("Redact Image")).clicked() {
         *action = Some(ImageAction::Redact(page, hit));
         ui.close();
     }
+    if ui.add_enabled(raster, egui::Button::new(tl!("Export image"))).clicked() {
+        *action = Some(ImageAction::Save(page, hit));
+        ui.close();
+    }
+
+    ui.separator();
+
     if ui.button(tl!("Create Link…")).clicked() {
         *action = Some(ImageAction::Link(page, hit));
         ui.close();
     }
+
+    ui.menu_button(tl!("Edit image using"), |ui| {
+        ui.add_enabled(false, egui::Button::new(tl!("Default image editor")));
+    });
+
     if ui.button(tl!("Recognize Text…")).clicked() {
         *action = Some(ImageAction::Recognize(page));
         ui.close();
     }
+
     ui.separator();
+
     if ui.button(tl!("Delete")).clicked() {
         view.image_selection = None;
         view.pending_edit = Some(Edit::EditPageImage { page, index: hit, change: E::Delete });
@@ -1545,5 +2021,100 @@ mod tests {
         assert_eq!(caret_color_on(Color32::from_rgb(0xFF, 0xFF, 0xF4)), Color32::BLACK);
         assert_eq!(caret_color_on(Color32::BLACK), Color32::WHITE);
         assert_eq!(caret_color_on(DARK_EDITOR_FILL), Color32::WHITE);
+    }
+
+#[test]
+    fn bullet_list_toggles_and_preserves_content() {
+        let mut text = "First line\nSecond line\n\nThird line".to_string();
+        assert!(!is_bulleted(&text));
+        assert!(toggle_bullet_list(&mut text));
+        assert!(is_bulleted(&text));
+        assert_eq!(text, "• First line\n• Second line\n\n• Third line");
+
+        // Toggling again removes bullets
+        assert!(toggle_bullet_list(&mut text));
+        assert!(!is_bulleted(&text));
+        assert_eq!(text, "First line\nSecond line\n\nThird line");
+    }
+
+    #[test]
+    fn numbered_list_toggles_and_preserves_content() {
+        let mut text = "Item A\nItem B\n\nItem C".to_string();
+        assert!(!is_numbered(&text));
+        assert!(toggle_numbered_list(&mut text));
+        assert!(is_numbered(&text));
+        assert_eq!(text, "1. Item A\n2. Item B\n\n3. Item C");
+
+        // Toggling again removes numbering
+        assert!(toggle_numbered_list(&mut text));
+        assert!(!is_numbered(&text));
+        assert_eq!(text, "Item A\nItem B\n\nItem C");
+    }
+
+    #[test]
+    fn superscript_and_subscript_conversion() {
+        let mut ed = LineEditor {
+            page: 0,
+            block: 0,
+            text: "E = mc2".to_string(),
+            original: "E = mc2".to_string(),
+            rect: egui::Rect::ZERO,
+            source_rect: [0.0; 4],
+            max_width: 100.0,
+            overflow: false,
+            selection: Some(6..7), // selecting '2'
+            font_resource: None,
+            fonts: std::collections::BTreeMap::new(),
+            source: None,
+            multiline: false,
+            size: 12.0,
+            focus: true,
+            look: pdfcraft_engine::AddedText::default(),
+            look0: pdfcraft_engine::AddedText::default(),
+            extras: Extras::default(),
+            extras0: Extras::default(),
+        };
+
+        assert!(toggle_superscript(&mut ed));
+        assert_eq!(ed.text, "E = mc²");
+        // Toggling superscript again returns to normal '2'
+        assert!(toggle_superscript(&mut ed));
+        assert_eq!(ed.text, "E = mc2");
+
+        // Test subscript on H2O
+        ed.text = "H2O".to_string();
+        ed.selection = Some(1..2); // selecting '2'
+        assert!(toggle_subscript(&mut ed));
+        assert_eq!(ed.text, "H₂O");
+        assert!(toggle_subscript(&mut ed));
+        assert_eq!(ed.text, "H2O");
+    }
+
+    #[test]
+    fn value_based_line_spacing_in_style() {
+        let ed = LineEditor {
+            page: 0,
+            block: 0,
+            text: "Paragraph text".to_string(),
+            original: "Paragraph text".to_string(),
+            rect: egui::Rect::ZERO,
+            source_rect: [0.0; 4],
+            max_width: 100.0,
+            overflow: false,
+            selection: None,
+            font_resource: None,
+            fonts: std::collections::BTreeMap::new(),
+            source: None,
+            multiline: false,
+            size: 12.0,
+            focus: true,
+            look: pdfcraft_engine::AddedText::default(),
+            look0: pdfcraft_engine::AddedText::default(),
+            extras: Extras { line_spacing: 1.33, underline: true, ..Default::default() },
+            extras0: Extras::default(),
+        };
+        let style = ed.style();
+        assert_eq!(style.line_spacing, Some(1.33));
+        assert_eq!(style.underline, Some(true));
     }
 }

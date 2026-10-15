@@ -67,7 +67,7 @@ pub use pdfcraft_edit::{BlockStyle, PageImage, RangeStyle, TextBlock, TextLine, 
 pub use pdfcraft_measure as measure;
 pub use pdfcraft_xfa::Report as XfaLayout;
 
-pub use pdfcraft_edit::{EditableObject, MAX_MOVE_OBJECTS, ObjectKind, ObjectTarget};
+pub use pdfcraft_edit::{ArrangeOrder, EditableObject, MAX_MOVE_OBJECTS, ObjectKind, ObjectTarget};
 
 /// A change to an existing page image.
 #[derive(Clone, Debug, PartialEq)]
@@ -87,6 +87,10 @@ pub enum ImageEdit {
         bytes: Arc<Vec<u8>>,
     },
     Delete,
+    /// Change the stacking order.
+    Arrange(ArrangeOrder),
+    /// Remove any private crop on the image.
+    RemoveCrop,
 }
 pub use pdfcraft_fonts::{MAX_SIGNATURE_CHARS, ScriptOutline, script_missing, script_outline, undrawable_message};
 
@@ -1866,6 +1870,12 @@ pub const EDIT_LABELS: &[&str] = &[
     "Flip image",
     "Replace image",
     "Delete image",
+    "Bring to front",
+    "Send to back",
+    "Bring forward",
+    "Send backward",
+    "Remove crop",
+    "Crop image",
     "Add header & footer",
     "Update header & footer",
     "Add watermark",
@@ -1998,6 +2008,11 @@ impl Edit {
                 ImageEdit::Flip { .. } => "Flip image",
                 ImageEdit::Replace { .. } => "Replace image",
                 ImageEdit::Delete => "Delete image",
+                ImageEdit::Arrange(ArrangeOrder::BringToFront) => "Bring to front",
+                ImageEdit::Arrange(ArrangeOrder::SendToBack) => "Send to back",
+                ImageEdit::Arrange(ArrangeOrder::BringForward) => "Bring forward",
+                ImageEdit::Arrange(ArrangeOrder::SendBackward) => "Send backward",
+                ImageEdit::RemoveCrop => "Remove crop",
             }),
             Edit::AddHeaderFooter { replace: false, .. } => Label::of("Add header & footer"),
             Edit::AddHeaderFooter { .. } => Label::of("Update header & footer"),
@@ -2512,6 +2527,8 @@ fn run_edit(doc: &mut pdfcraft_cos::Document, edit: &Edit, cx: &mut EditCtx) -> 
                 }
                 ImageEdit::Crop(keep) => pdfcraft_edit::ImageChange::Crop(*keep),
                 ImageEdit::Delete => pdfcraft_edit::ImageChange::Delete,
+                ImageEdit::Arrange(order) => pdfcraft_edit::ImageChange::Arrange(*order),
+                ImageEdit::RemoveCrop => pdfcraft_edit::ImageChange::RemoveCrop,
             };
             pdfcraft_edit::change_image(doc, *page, *index, &c)?;
         }

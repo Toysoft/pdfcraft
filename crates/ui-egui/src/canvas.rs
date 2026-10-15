@@ -564,6 +564,127 @@ pub enum ViewAction {
     CameraNext(&'static str),
 }
 
+/// Default page right-click menu actions (matching Adobe Acrobat).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum PageMenuAction {
+    RotateCCW(usize),
+    RotateCW(usize),
+    Print,
+    SelectTool,
+    HandTool,
+    MarqueeZoom,
+    Copy,
+    Paste(usize, [f64; 2]),
+    AddComment(usize, [f64; 2]),
+    AddBookmark(usize),
+    TakeSnapshot,
+    EditPdf,
+    AddText,
+    AddImage,
+    DeletePage(usize),
+    ExportPdf,
+    Find,
+    DocProperties,
+}
+
+pub(crate) fn default_page_context_menu(
+    ui: &mut egui::Ui,
+    page: usize,
+    at: [f64; 2],
+    can_copy: bool,
+    can_paste: bool,
+    action: &mut Option<PageMenuAction>,
+) {
+    // Top horizontal icon bar: Rotate CCW, Print, Select tool, Hand tool, Marquee Zoom
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+        if crate::icons::button(ui, "rotate-ccw", 24.0, false, tl!("Rotate Counterclockwise")).clicked() {
+            *action = Some(PageMenuAction::RotateCCW(page));
+            ui.close();
+        }
+        if crate::icons::button(ui, "printer", 24.0, false, tl!("Print")).clicked() {
+            *action = Some(PageMenuAction::Print);
+            ui.close();
+        }
+        if crate::icons::button(ui, "mouse-pointer-2", 24.0, false, tl!("Select Tool")).clicked() {
+            *action = Some(PageMenuAction::SelectTool);
+            ui.close();
+        }
+        if crate::icons::button(ui, "hand", 24.0, false, tl!("Hand Tool")).clicked() {
+            *action = Some(PageMenuAction::HandTool);
+            ui.close();
+        }
+        if crate::icons::button(ui, "zoom-in", 24.0, false, tl!("Marquee Zoom")).clicked() {
+            *action = Some(PageMenuAction::MarqueeZoom);
+            ui.close();
+        }
+    });
+
+    ui.separator();
+
+    if ui.add_enabled(can_copy, egui::Button::new(tl!("Copy")).shortcut_text("Ctrl+C")).clicked() {
+        *action = Some(PageMenuAction::Copy);
+        ui.close();
+    }
+    if ui.add_enabled(can_paste, egui::Button::new(tl!("Paste")).shortcut_text("Ctrl+V")).clicked() {
+        *action = Some(PageMenuAction::Paste(page, at));
+        ui.close();
+    }
+
+    ui.separator();
+
+    if ui.button(tl!("Add comment")).clicked() {
+        *action = Some(PageMenuAction::AddComment(page, at));
+        ui.close();
+    }
+    if ui.button(tl!("Add bookmark")).clicked() {
+        *action = Some(PageMenuAction::AddBookmark(page));
+        ui.close();
+    }
+    if ui.button(tl!("Take a snapshot")).clicked() {
+        *action = Some(PageMenuAction::TakeSnapshot);
+        ui.close();
+    }
+
+    ui.separator();
+
+    if ui.add(egui::Button::new(egui::RichText::new(tl!("Edit this PDF")).strong())).clicked() {
+        *action = Some(PageMenuAction::EditPdf);
+        ui.close();
+    }
+    if ui.button(tl!("Add text")).clicked() {
+        *action = Some(PageMenuAction::AddText);
+        ui.close();
+    }
+    if ui.button(tl!("Add image")).clicked() {
+        *action = Some(PageMenuAction::AddImage);
+        ui.close();
+    }
+    if ui.button(tl!("Delete page")).clicked() {
+        *action = Some(PageMenuAction::DeletePage(page));
+        ui.close();
+    }
+    if ui.button(tl!("Export this PDF")).clicked() {
+        *action = Some(PageMenuAction::ExportPdf);
+        ui.close();
+    }
+
+    ui.separator();
+
+    if ui.button(tl!("Find text or tools")).clicked() {
+        *action = Some(PageMenuAction::Find);
+        ui.close();
+    }
+    if ui.button(tl!("Rotate view clockwise")).clicked() {
+        *action = Some(PageMenuAction::RotateCW(page));
+        ui.close();
+    }
+    if ui.button(tl!("Document properties…")).clicked() {
+        *action = Some(PageMenuAction::DocProperties);
+        ui.close();
+    }
+}
+
 impl DocView {
     pub fn raster_memory(&self) -> RasterMemory {
         RasterMemory {
@@ -1905,6 +2026,7 @@ impl DocView {
 
 /// The hover popup for an annotation. Replies and Fill & Sign marks (typed text, checks, signatures)
 /// show none: they are page content being edited, not comments.
+/// If `display_author_no_comment` is false, highlighted text markup with no comment body shows no popup.
 fn annotation_hover_text(a: &pdfcraft_render::Annotation) -> Option<String> {
     if a.in_reply_to.is_some() || a.fill_sign {
         return None;
@@ -2221,6 +2343,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let editing_content =
         (app.left_open && app.left == crate::LeftPanel::Tool("edit")) || matches!(app.quick_tool, QuickTool::AddText | QuickTool::EditText);
     let text_style = app.text_style.clone();
+    let can_paste_image = app.can_paste_image();
     let view = &mut app.views[index];
     // Opened without the owner password and something is restricted.
     let secured = doc.security_summary().is_some_and(|s| !(s.owner || (s.permissions.modify() && s.permissions.assemble())));
@@ -2546,6 +2669,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let mut clicked_link: Option<LinkTarget> = None;
     let mut remote_open: Option<(pdfcraft_engine::DocId, String, pdfcraft_render::RemoteDestination)> = None;
     let mut canvas_action: Option<comments::CanvasAction> = None;
+    let mut page_action: Option<PageMenuAction> = None;
     let mut field_menu: Option<FieldMenu> = None;
     let mut open_props: Option<(usize, usize)> = None;
     let mut field_props = false;
@@ -3407,20 +3531,21 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 }
                 return;
             }
-            if view.comments.selected.is_none() {
-                let selected = view.selected_text().is_some_and(|t| !t.is_empty());
-                let key = crate::commands::shortcut_label(ui.ctx(), crate::commands::COPY);
-                if ui.add_enabled(can_copy && selected, egui::Button::new(tl!("Copy")).shortcut_text(key)).clicked() {
-                    copy_selected = true;
-                    ui.close();
-                }
-                ui.separator();
+            if tool == QuickTool::EditText
+                && ui.ctx().data(|d| d.get_temp::<bool>(resp.id.with("image-menu"))).unwrap_or(false)
+                && let Some(sel) = view.image_selection.clone()
+            {
+                let images = doc.page_images(sel.page);
+                crate::edit_text_ui::image_context_menu(ui, view, &images, sel.page, sel.index, can_paste_image, &mut image_action);
+                return;
+            }
+            if view.comments.selected.is_some() {
+                canvas_action = comments::context_menu(ui, view, info, prefs, allowed);
+                return;
             }
             // Over a picture (and no comment): Copy Image, as in Acrobat's page menu.
             let mut copy_image = None;
-            if view.comments.selected.is_none()
-                && let Some((page, at)) = view.comments.context_at
-            {
+            if let Some((page, at)) = view.comments.context_at {
                 // The page's content is parsed once per right-click, not on every frame the menu is open.
                 let key = egui::Id::new("copy-image-under-menu");
                 let cached = ui.data(|d| d.get_temp::<(usize, [f64; 2], Option<usize>)>(key)).filter(|c| c.0 == page && c.1 == at);
@@ -3444,7 +3569,14 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                     ui.separator();
                 }
             }
-            canvas_action = comments::context_menu(ui, view, info, prefs, allowed).or(copy_image);
+            let has_copy_image = copy_image.is_some();
+            if copy_image.is_some() {
+                canvas_action = copy_image;
+            }
+            let (page, at) = view.comments.context_at.unwrap_or((view.current, [0.0, 0.0]));
+            let can_copy_items = can_copy && (view.image_selection.is_some() || view.selected_text().is_some() || has_copy_image);
+            let can_paste = can_paste_image;
+            default_page_context_menu(ui, page, at, can_copy_items, can_paste, &mut page_action);
         });
         (wanted, visible_now)
     });
@@ -3625,6 +3757,9 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     } else {
         view.links.selected = None;
     }
+    if tool != QuickTool::EditText {
+        view.image_selection = None;
+    }
     if stamp_placed {
         tool = QuickTool::Select;
     }
@@ -3736,9 +3871,113 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
             app.views[index].image_selection = None;
             app.cut_page_image(page, image);
         }
+        Some(crate::edit_text_ui::ImageAction::Paste(page, rect)) => {
+            let offset_rect = [rect[0] + 20.0, rect[1] - 20.0, rect[2] + 20.0, rect[3] - 20.0];
+            app.paste_image(page, Some(offset_rect));
+        }
+        Some(crate::edit_text_ui::ImageAction::DrawFreehand) => {
+            app.quick_tool = crate::QuickTool::Comment(crate::comments::CommentTool::Ink);
+        }
         Some(crate::edit_text_ui::ImageAction::Redact(page, index)) => app.redact_page_image(page, index),
         Some(crate::edit_text_ui::ImageAction::Link(page, index)) => app.link_page_image(page, index),
         Some(crate::edit_text_ui::ImageAction::Recognize(page)) => app.recognize_text_on_page(page),
+        Some(crate::edit_text_ui::ImageAction::AddComment(page, i)) => {
+            if let Some(d) = app.session.get(app.views[index].id) {
+                let images = d.page_images(page);
+                if let Some(img) = images.get(i) {
+                    let r = img.visible_rect.unwrap_or(img.rect);
+                    let center = [(r[0] + r[2]) / 2.0, (r[1] + r[3]) / 2.0];
+                    app.views[index].comments.context_at = Some((page, center));
+                    app.views[index].comments.composer = Some(crate::comments::Composer {
+                        page,
+                        at: center,
+                        kind: crate::comments::ComposerKind::Note,
+                        text: String::new(),
+                        focus: true,
+                    });
+                }
+            }
+        }
+        Some(crate::edit_text_ui::ImageAction::Crop) => {
+            let doc_id = app.views[index].id;
+            if let Some(s) = app.views[index].image_selection.as_mut() {
+                if let Some(d) = app.session.get(doc_id) {
+                    let images = d.page_images(s.page);
+                    if let Some(im) = images.get(s.index) {
+                        s.crop = Some(crate::edit_text_ui::CropMode::new(im.visible_rect.unwrap_or(im.rect)));
+                        s.crop_mode = true;
+                        s.crop_rect = None;
+                    }
+                }
+            }
+        }
+        None => {}
+    }
+    match page_action {
+        Some(PageMenuAction::Copy) => {
+            if let Some(sel) = app.views[index].image_selection.clone() {
+                app.copy_page_image(sel.page, sel.index);
+            } else if app.views[index].selected_text().is_some() {
+                app.execute("edit.copy");
+            } else if let Some((page, at)) = app.views[index].comments.context_at
+                && let Some(doc) = app.session.get(app.views[index].id)
+                && let Some(image) = doc.page_image_at(page, at)
+            {
+                app.copy_page_image(page, image);
+            }
+        }
+        Some(PageMenuAction::Paste(page, at)) => {
+            app.paste_image_at(page, at);
+        }
+        Some(PageMenuAction::RotateCCW(page)) => {
+            app.views[index].pending_edit = Some(pdfcraft_engine::Edit::RotatePages { pages: vec![page], degrees: -90 });
+        }
+        Some(PageMenuAction::RotateCW(page)) => {
+            app.views[index].pending_edit = Some(pdfcraft_engine::Edit::RotatePages { pages: vec![page], degrees: 90 });
+        }
+        Some(PageMenuAction::Print) => {
+            app.open_print();
+        }
+        Some(PageMenuAction::SelectTool) => {
+            app.quick_tool = QuickTool::Select;
+        }
+        Some(PageMenuAction::HandTool) => {
+            app.quick_tool = QuickTool::Hand;
+        }
+        Some(PageMenuAction::MarqueeZoom) => {
+            app.quick_tool = QuickTool::MarqueeZoom;
+        }
+        Some(PageMenuAction::AddComment(page, at)) => {
+            app.views[index].comments.composer =
+                Some(crate::comments::Composer { page, at, kind: crate::comments::ComposerKind::Note, text: String::new(), focus: true });
+        }
+        Some(PageMenuAction::AddBookmark(_page)) => {
+            app.bookmark_action(crate::panels::BmAction::New);
+        }
+        Some(PageMenuAction::TakeSnapshot) => {
+            app.quick_tool = QuickTool::Snapshot;
+        }
+        Some(PageMenuAction::EditPdf) => {
+            app.quick_tool = QuickTool::EditText;
+        }
+        Some(PageMenuAction::AddText) => {
+            app.quick_tool = QuickTool::AddText;
+        }
+        Some(PageMenuAction::AddImage) => {
+            app.add_image_dialog();
+        }
+        Some(PageMenuAction::DeletePage(page)) => {
+            app.views[index].pending_edit = Some(pdfcraft_engine::Edit::DeletePages { pages: vec![page] });
+        }
+        Some(PageMenuAction::ExportPdf) => {
+            app.dialog = Some(crate::Dialog::Export(crate::export_ui::ExportKind::Image));
+        }
+        Some(PageMenuAction::Find) => {
+            app.views[index].open_find();
+        }
+        Some(PageMenuAction::DocProperties) => {
+            app.dialog = Some(crate::Dialog::Properties(crate::PropsTab::Description));
+        }
         None => {}
     }
     if let Some(why) = refused {
@@ -3805,24 +4044,30 @@ fn selection_actions(
     if !viewport.intersects(rect) {
         return false;
     }
-    let x = rect.left().clamp(viewport.left() + 8.0, (viewport.right() - 520.0).max(viewport.left() + 8.0));
+    let menu_width = 184.0;
+    let ideal_x = rect.right() - 24.0;
+    let max_x = (viewport.right() - menu_width - 8.0).max(viewport.left() + 8.0);
+    let x = ideal_x.clamp(viewport.left() + 8.0, max_x);
     let y = if rect.bottom() + 48.0 < viewport.bottom() { rect.bottom() + 6.0 } else { (rect.top() - 44.0).max(viewport.top() + 6.0) };
     let mut chosen = None;
     egui::Area::new(egui::Id::new(("text-selection-actions", view.id.0))).order(egui::Order::Foreground).fixed_pos(pos2(x, y)).show(ui.ctx(), |ui| {
-        egui::Frame::popup(ui.style()).show(ui, |ui| {
+        egui::Frame::popup(ui.style()).corner_radius(CornerRadius::same(12)).show(ui, |ui| {
+            ui.spacing_mut().item_spacing.x = 2.0;
             ui.horizontal(|ui| {
-                for (label, action) in [
-                    (tl!("Add comment"), SelectionAction::Note),
-                    (tl!("Highlight"), SelectionAction::Markup(comments::CommentTool::Highlight)),
-                    (tl!("Underline"), SelectionAction::Markup(comments::CommentTool::Underline)),
-                    (tl!("Strikethrough"), SelectionAction::Markup(comments::CommentTool::StrikeOut)),
-                    (tl!("Replace text"), SelectionAction::Replace),
-                ] {
-                    if ui.add_enabled(can_comment, egui::Button::new(label)).clicked() {
-                        chosen = Some(action);
+                ui.add_enabled_ui(can_comment, |ui| {
+                    for (icon, tooltip, action) in [
+                        ("message-square-plus", tl!("Add comment"), SelectionAction::Note),
+                        ("highlighter", tl!("Highlight"), SelectionAction::Markup(comments::CommentTool::Highlight)),
+                        ("underline", tl!("Underline"), SelectionAction::Markup(comments::CommentTool::Underline)),
+                        ("strikethrough", tl!("Strikethrough"), SelectionAction::Markup(comments::CommentTool::StrikeOut)),
+                        ("replace", tl!("Replace text"), SelectionAction::Replace),
+                    ] {
+                        if icons::button(ui, icon, 26.0, false, tooltip).clicked() {
+                            chosen = Some(action);
+                        }
                     }
-                }
-                if ui.add_enabled(can_copy, egui::Button::new(tl!("Copy"))).clicked() {
+                });
+                if ui.add_enabled_ui(can_copy, |ui| icons::button(ui, "copy", 26.0, false, tl!("Copy"))).inner.clicked() {
                     chosen = Some(SelectionAction::Copy);
                 }
             });
