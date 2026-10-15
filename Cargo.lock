@@ -1143,6 +1143,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "craft-job"
+version = "0.1.0"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F114%2Fhead#4a71cd1afd6305d687c0a39de599ac7e57f8427a"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "craft-print"
 version = "0.1.0"
 source = "git+https://github.com/storytold/craft-libs?rev=666c358065261a2816b376fa3bb10538dbf53040#666c358065261a2816b376fa3bb10538dbf53040"
@@ -1164,6 +1172,18 @@ dependencies = [
  "muda",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
+]
+
+[[package]]
+name = "craft-scan"
+version = "0.1.0"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F114%2Fhead#4a71cd1afd6305d687c0a39de599ac7e57f8427a"
+dependencies = [
+ "craft-job",
+ "image",
+ "log",
+ "serde",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -4246,6 +4266,7 @@ name = "pdfcraft-platform"
 version = "0.8.0"
 dependencies = [
  "async-channel",
+ "craft-scan",
  "futures-lite",
  "rustix 1.1.5",
  "zbus",
