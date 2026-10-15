@@ -2,6 +2,7 @@
 
 **Stage: alpha** · next: beta, ~25% (ready for real work 50% → 75%) and ~400–700 h away
 
+> **Last reviewed:** 2026-10-14 · **Last updated:** 2026-10-14 · **Change:** minor (M10 candidate: model-independent physical-size coverage for the synthetic OCR scan; crate validation pending; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-13 · **Change:** minor (M3 candidate: native opens retain chosen tools through password retries and defer startup intake while preparation is pending; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-12 · **Last updated:** 2026-10-12 · **Change:** minor (M4 #1310 #1311 #1312: undo, revert and the next save keep the last saved revision; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-12 · **Last updated:** 2026-10-12 · **Change:** minor (M13: CLI check visits each directory once through aliases and cycles; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
@@ -151,6 +152,8 @@ Ranked; detail and the full milestone table in [docs/roadmap.md](docs/roadmap.md
 | 8 | 1.0 polish: performance, right-to-left, missing languages, keyboard-only (M14) | 55–95 |
 
 ## Progress log
+
+- **2026-10-14 (M10, OCR fixture candidate):** The 300 DPI searchability scan retains the source page size through an explicit image-resolution override. A separate geometry regression needs no OCR models; existing text, word-placement, undo and second-pass checks remain. A cached 0.7.1 CLI probe reproduced the size change and correction; the new current-main crate tests remain pending. Product behavior and estimates are unchanged.
 - **2026-10-13 (G14, Vietnamese localization):** Added Vietnamese (`vi`, Tiếng Việt) as an interface and date language with a 2,591-entry catalog (`plural_none`) covering 100% of the current localizable key union (plus `theme`/`Appearance`). Locale tags `vi` / `vi-VN` / `vi_VN.UTF-8` resolve; calendar months use numeric `Tháng 1`…`12` / `tháng 1`…`12`. Native-speaker community review recorded. The twelve-language localization mean moves from ≈59% to ≈68%; weighted readiness ≈49% → ≈50%. Status stays `partial`: engine/OS details, document contents, filenames, CLI/MCP and external help stay outside the catalog by design.
 
 - **2026-10-13 (M2, page-unit transform precision):** Preserve small transform coefficients in page marks, added content and print output. Regression cases cover accepted page units of 4096 and 75000; existing page-unit interpretation and estimates are unchanged.
@@ -439,6 +442,7 @@ Newest first: the date, what moved, and the new overall estimate.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-14 | minor | M10 candidate: synthetic OCR scan retains physical size; model-independent geometry regression added, crate tests pending; estimates unchanged. |
 | 2026-10-12 | minor | M3/#1364 candidate: absolute local GoToR links require desktop consent or headless allow_absolute; existing relative navigation and validation retained. Estimates unchanged. |
 | 2026-10-12 | minor | M8: redaction retires inherited `/Resources` so a parent `/Pages` can't keep a removed XObject reachable; only redacted pages that inherit are pinned (one shared reference), unredacted pages are untouched; estimates unchanged |
 | 2026-10-12 | minor | M7/#1200 candidate: bounded local GoToR opening, root-confined automation, and action-preserving appearance edits; named destinations and window behavior remain partial; estimates unchanged. |
