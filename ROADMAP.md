@@ -2,6 +2,7 @@
 
 **Stage: alpha** · next: beta, ~25% (ready for real work 50% → 75%) and ~400–700 h away
 
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (M14/#2383 GPU-limit candidate; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-14 · **Change:** minor (M14: the Italian catalog has every entry the other catalogs had and the code looks up; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 > **Last reviewed:** 2026-10-14 · **Last updated:** 2026-10-14 · **Change:** minor (M3 #2080 candidate: explicit search jumps join per-tab history; rail and control-channel Back/Forward; estimates unchanged)
 > **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-13 · **Change:** minor (M4 #1910: Organize Pages opens on the current page; estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
@@ -156,7 +157,9 @@ Ranked; detail and the full milestone table in [docs/roadmap.md](docs/roadmap.md
 | 8 | 1.0 polish: performance, right-to-left, missing languages, keyboard-only (M14) | 55–95 |
 
 ## Progress log
+
 - **2026-10-13 (community, M3, #1569 review):** Pixel-only Wayland wheel, wheel-tilt and continuous input use standalone moved events, so Ctrl zoom does not remain latched after the modifier is released (#991); vendored winit patch (13), with a policy test. Estimates unchanged.
+- **2026-10-15 (M14, #2383 candidate):** Device-limit requests now clamp unsupported maxima and minimum alignments before enabling the adapter's full 2D texture extent. This addresses the reported V3D request of 16 shader variables on an adapter supporting 15. Synthetic regressions fail before the clamp and pass afterward, along with the existing HiDPI case and Windows GPU-required application tests. Raspberry Pi startup remains unverified; milestone and overall estimates are unchanged.
 - **2026-10-12 (M6):** XFDF field import and data-file extraction join all text nodes in a value, preserving text after XML comments and processing instructions. Synthetic regressions cover Unicode, CDATA, empty values and PDF save/reopen. Estimates unchanged.
 - **2026-10-12 (M7, picture right-click menu):** The Edit text & images menu of a picture gains Cut Image, Redact Image (a redaction mark over the picture, applied from Redact a PDF), Create Link… and Recognize Text… (for that page), in all 21 catalogs. The menu was drawn only while the pointer was over the picture, so its items outside the picture (most of a logo's menu, and Delete below a page) could not be clicked; an open menu now stays drawn. Still missing from Acrobat's menu: Arrange (bring to front, send backward), Remove crop, Draw freehand and Edit image using… (opening an external editor).
 - **2026-10-12 (M2, inline-image boundaries):** Unfiltered inline images with known sample layouts keep pixel bytes that look like the `EI` terminator when content is rewritten. Regression tests cover row padding, colour-space and parameter aliases, masks and malformed sizes; classic and packed saved PDFs retain the pixels in independent readers and renderers. Filtered and resource-defined layouts retain the existing tolerant heuristic. Estimates unchanged.
@@ -487,6 +490,8 @@ Newest first: the date, what moved, and the new overall estimate.
 - **2026-10-10 (UI docking):** Tools and Inspector can be regrouped, split beside the PDF, or floated inside the app window. Existing toggles reopen panels at their saved locations; UI commands arrange/reset panels, and preferences retain their layout. Read/full-screen modes preserve the focused document view. No milestone percentage change.
 
 ## Revision history
+
+**2026-10-15 · minor:** M14/#2383 candidate: GPU device requests clamp unsupported limits while retaining the adapter texture extent. Synthetic V3D/downlevel regressions and Windows GPU-required tests pass; Raspberry Pi hardware remains unverified. Estimates unchanged.
 
 | Date | Change | Summary |
 |---|---|---|
