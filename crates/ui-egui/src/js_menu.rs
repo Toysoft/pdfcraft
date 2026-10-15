@@ -118,6 +118,18 @@ fn current(app: &PdfCraftApp, pending: &Pending) -> bool {
 }
 
 impl PdfCraftApp {
+    /// Include queued/running actions, but not retired workers whose results are discarded.
+    pub(crate) fn link_script_interaction_active(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.link_script.active.is_some() || self.link_script.pending.is_some()
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            false
+        }
+    }
+
     /// The pointer position is captured by the canvas in viewport points, before the worker starts.
     pub(crate) fn run_link_script_at(&mut self, id: DocId, page: usize, annotation: usize, anchor: egui::Pos2, frame: Option<u64>) {
         #[cfg(not(target_arch = "wasm32"))]
@@ -594,7 +606,7 @@ mod tests {
         h.state_mut().run_link_script(id, 0, 0);
         wait(&mut h, |a| a.link_script.as_ref().is_some_and(|j| j.menu.is_some()));
         h.state_mut().run_link_script(id, 0, 1);
-        h.run_steps(3);
+        wait(&mut h, ready_menu);
         let menu = &h.state().link_script.as_ref().unwrap().menu.as_ref().unwrap().0;
         assert_eq!(menu[0].name, "Second component", "the second activation must replace the first, without Escape");
     }
@@ -610,10 +622,13 @@ mod tests {
         h.step();
     }
     fn two_links(ppp: f32, zoom: &str) -> Harness<'static, PdfCraftApp> {
+        read_harness(second_link(fixture()), ppp, zoom)
+    }
+    fn read_harness(bytes: Vec<u8>, ppp: f32, zoom: &str) -> Harness<'static, PdfCraftApp> {
         let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).with_pixels_per_point(ppp).build_eframe(|_cc| {
             let mut a = PdfCraftApp::new();
             a.set_option("language", "en").unwrap();
-            a.open_bytes("two-links.pdf", None, second_link(fixture())).unwrap();
+            a.open_bytes("interactive.pdf", None, bytes.clone()).unwrap();
             a
         });
         wait(&mut h, |a| a.active_ids().is_some());
@@ -648,6 +663,56 @@ mod tests {
             assert_eq!(h.state().js_console.log.iter().filter(|s| s.as_str() == "started B").count(), 1);
         }
     }
+
+    #[test]
+    fn javascript_menu_hides_its_annotation_tooltip_from_activation_until_closed() {
+        let mut h = two_links(1.0, "100%");
+        let source = at(&h, 60.0, 60.0);
+        h.hover_at(source);
+        h.run_steps(3);
+        let hover_rect = painted_text(&h, "JavaScript").unwrap();
+        click_at(&mut h, source);
+        let activation_tooltip = painted_text(&h, "JavaScript");
+        wait(&mut h, ready_menu);
+        h.run_steps(3);
+        let first_item = h.get_by_label("Next").rect();
+        assert!(hover_rect.intersects(first_item), "the fixture must reproduce the tooltip over the first menu item");
+        assert!(painted_text(&h, "JavaScript").is_none(), "the annotation tooltip must not cover the open JavaScript menu");
+        assert!(activation_tooltip.is_none(), "the tooltip must disappear in the activation frame, before the worker replies");
+        h.hover_at(at(&h, 65.0, 65.0));
+        h.run_steps(3);
+        assert!(ready_menu(h.state()));
+        let tooltip = painted_text(&h, "JavaScript");
+        if let Some(rect) = tooltip {
+            assert!(rect.intersects(first_item), "the reproduced tooltip must overlap the first menu item");
+        }
+        if let Ok(path) = std::env::var("PDFCRAFT_HOVER_SHOT") {
+            h.render().unwrap().save(path).unwrap();
+        }
+        assert!(tooltip.is_none(), "hovering the annotation again must not recreate its tooltip");
+        h.key_press(egui::Key::Escape);
+        h.step();
+        assert!(h.state().link_script.is_none());
+        h.hover_at(source);
+        h.run_steps(3);
+        assert!(painted_text(&h, "JavaScript").is_some());
+        click_at(&mut h, source);
+        wait(&mut h, ready_menu);
+        h.run_steps(3);
+        let formerly_covered = hover_rect.intersect(h.get_by_label("Next").rect()).center();
+        click_at(&mut h, formerly_covered);
+        wait(&mut h, |a| a.link_script.is_none());
+        assert_eq!(h.state().views[0].current, 1, "the first item must receive the mouse click");
+    }
+
+    // egui omits tooltip labels from accessibility queries; inspect what was actually painted.
+    fn painted_text(h: &Harness<'static, PdfCraftApp>, label: &str) -> Option<egui::Rect> {
+        h.output().shapes.iter().find_map(|shape| match &shape.shape {
+            egui::Shape::Text(text) if text.galley.text() == label => Some(text.visual_bounding_rect().intersect(shape.clip_rect)),
+            _ => None,
+        })
+    }
+
     #[test]
     fn popup_flips_at_edges_stays_in_viewport_and_cancels_without_eating_the_click() {
         let mut h = harness();
@@ -830,9 +895,8 @@ mod tests {
         wait(&mut h, |a| a.link_script.is_none());
         assert!(h.state().js_console.log.iter().any(|s| s == "selected"));
     }
-    #[test]
-    fn ordinary_goto_link_after_popup_is_not_lost() {
-        let mut bytes = second_link(fixture());
+    fn ordinary_links_and_comment() -> Vec<u8> {
+        let bytes = second_link(fixture());
         let mut cos = pdfcraft_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
         let cat = cos.get(cos.root().unwrap());
         let pages = cos.resolve(cat.as_dict().unwrap().get(b"Pages").unwrap());
@@ -847,16 +911,20 @@ mod tests {
         let mut page_dict = cos.get(page).as_dict().unwrap().clone();
         let mut a = page_dict.get(b"Annots").unwrap().as_array().unwrap().clone();
         a.push(Object::Ref(annotation));
+        let mut comment = Dict::new();
+        comment.set(b"Subtype".to_vec(), Object::Name(b"Text".to_vec()));
+        comment.set(b"Rect".to_vec(), Object::Array(vec![Object::Int(130), Object::Int(200), Object::Int(155), Object::Int(225)]));
+        comment.set(b"T".to_vec(), Object::String(PdfString::text("Reviewer")));
+        comment.set(b"Contents".to_vec(), Object::String(PdfString::text("Component note")));
+        a.push(Object::Ref(cos.add(comment)));
         page_dict.set(b"Annots".to_vec(), Object::Array(a));
         cos.set(page, page_dict);
-        bytes = pdfcraft_cos::write_incremental(&cos, &Default::default()).unwrap();
-        let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_cc| {
-            let mut a = PdfCraftApp::new();
-            a.open_bytes("goto.pdf", None, bytes.clone()).unwrap();
-            a
-        });
-        wait(&mut h, |a| a.active_ids().is_some());
-        h.run_steps(4);
+        pdfcraft_cos::write_incremental(&cos, &Default::default()).unwrap()
+    }
+
+    #[test]
+    fn ordinary_goto_link_after_popup_is_not_lost() {
+        let mut h = read_harness(ordinary_links_and_comment(), 1.0, "100%");
         let id = h.state().active_ids().unwrap().1;
         h.state_mut().run_link_script_at(id, 0, 0, egui::pos2(150.0, 160.0), None);
         wait(&mut h, ready_menu);
@@ -865,6 +933,33 @@ mod tests {
         h.run_steps(4);
         assert_eq!(h.state().views[0].current, 1);
         assert!(h.state().link_script.is_none());
+    }
+
+    #[test]
+    fn ordinary_link_and_comment_tooltips_survive_javascript_menu_interactions() {
+        let mut h = read_harness(ordinary_links_and_comment(), 1.0, "100%");
+        let id = h.state().active_ids().unwrap().1;
+        for menu_open in [false, true, false] {
+            if menu_open {
+                let source = at(&h, 60.0, 60.0);
+                h.state_mut().run_link_script_at(id, 0, 0, source, None);
+                wait(&mut h, ready_menu);
+            } else if h.state().link_script.active.is_some() {
+                h.key_press(egui::Key::Escape);
+                h.step();
+            }
+            for (x, y, label) in [(230.0, 145.0, "Go to page 2"), (140.0, 210.0, "Reviewer\nComponent note")] {
+                h.hover_at(at(&h, x, y));
+                h.run_steps(3);
+                let tip = painted_text(&h, label).unwrap_or_else(|| panic!("missing {label:?}, menu_open={menu_open}"));
+                assert_ne!(
+                    h.ctx.layer_id_at(tip.center()),
+                    Some(egui::LayerId::new(egui::Order::Tooltip, egui::Id::new("canvas-hover"))),
+                    "informational tooltips must not intercept pointer events"
+                );
+                assert_eq!(ready_menu(h.state()), menu_open);
+            }
+        }
     }
 
     #[test]

@@ -38,6 +38,11 @@ marked entries show a check, and separators and nested submenus retain their PDF
 Arrow keys navigate enabled entries, Right/Enter enter submenus, Left leaves, Enter/Space select,
 and Escape cancels. Menu-owned focus is released when the interaction ends.
 
+JavaScript annotation hover tips disappear in the activation frame and stay hidden while
+that interaction is running or queued, including between popup replies. Ordinary link and
+comment tips remain available. Canvas hover tips are pointer-transparent, so their current
+or previous-frame rectangles cannot intercept clicks intended for a menu or the document.
+
 An outside press cancels the old interaction without consuming the pointer event: the canvas,
 another annotation or an interface control receives that same press/release. Another link starts
 a fresh invocation immediately when a worker slot is available. It never replays the old script.

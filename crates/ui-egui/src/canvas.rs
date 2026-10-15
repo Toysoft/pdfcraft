@@ -2194,6 +2194,7 @@ const KEY_SCROLL_LINE: f32 = 40.0;
 
 pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
+    let javascript_interaction = app.link_script_interaction_active();
     // Keyboard scrolling applies to this frame's page view only, never later.
     let key_scroll = std::mem::take(&mut app.views[index].key_scroll);
     // The Search panel closed: its search moves to the find bar.
@@ -2534,7 +2535,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         _ => None,
     };
     let mut open_signature = false;
-    let mut hover_text: Option<(Pos2, String)> = None;
+    let mut hover_text: Option<(Pos2, String, bool)> = None;
     // A dialog, save prompt or palette covers the page. Hover tips are drawn above those
     // windows, so a comment under the pointer would otherwise float over the dialog.
     let page_covered = app.dialog.is_some()
@@ -3246,7 +3247,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                             LinkTarget::JavaScript(_) => "JavaScript".to_string(),
                             LinkTarget::Other(s) => crate::i18n::fmt(tl!("{s} action"), &[("s", s)]),
                         };
-                        hover_text = Some((p, label));
+                        hover_text = Some((p, label, matches!(&l.target, LinkTarget::JavaScript(_))));
                         if resp.clicked() && tool == QuickTool::Select && !consumed {
                             clicked_link = Some(l.target.clone());
                             clicked_annotation = Some((l.page, l.index));
@@ -3265,7 +3266,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                         && !hidden
                         && let Some(text) = annotation_hover_text(a)
                     {
-                        hover_text = Some((p, text));
+                        hover_text = Some((p, text, false));
                     }
                 }
             }
@@ -3582,13 +3583,21 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     view.frame_queue = queue;
     view.frame_visible = visible_now.iter().copied().collect();
 
-    if let Some((pos, text)) = hover_text {
-        egui::Area::new(egui::Id::new("canvas-hover")).order(egui::Order::Tooltip).fixed_pos(pos + vec2(14.0, 16.0)).show(ui.ctx(), |ui| {
-            egui::Frame::popup(ui.style()).show(ui, |ui| {
-                ui.set_max_width(320.0);
-                ui.label(text);
-            });
-        });
+    // The action starts below, after painting. Suppress its tip in the activation frame too,
+    // then throughout the interaction: Tooltip is above the menu's Foreground layer.
+    let javascript_activating = matches!(&clicked_link, Some(LinkTarget::JavaScript(_)));
+    if let Some((pos, text, javascript)) = hover_text
+        && !(javascript && (javascript_interaction || javascript_activating))
+    {
+        egui::Area::new(egui::Id::new("canvas-hover")).order(egui::Order::Tooltip).interactable(false).fixed_pos(pos + vec2(14.0, 16.0)).show(
+            ui.ctx(),
+            |ui| {
+                egui::Frame::popup(ui.style()).show(ui, |ui| {
+                    ui.set_max_width(320.0);
+                    ui.label(text);
+                });
+            },
+        );
     }
     find_bar(view, info.pages.len(), avail, ui, &t);
     page_size_hint(view, info, units, avail, unobstructed, ui, &t);
