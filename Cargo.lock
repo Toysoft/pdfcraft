@@ -1143,6 +1143,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "craft-devices"
+version = "0.1.0"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F144%2Fhead#4b5255d9ea6c0bfe8a4da5dfd04c4f587917572d"
+dependencies = [
+ "craft-job",
+ "craft-scan",
+ "serde_json",
+]
+
+[[package]]
+name = "craft-job"
+version = "0.1.0"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F144%2Fhead#4b5255d9ea6c0bfe8a4da5dfd04c4f587917572d"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "craft-print"
 version = "0.1.0"
 source = "git+https://github.com/storytold/craft-libs?rev=666c358065261a2816b376fa3bb10538dbf53040#666c358065261a2816b376fa3bb10538dbf53040"
@@ -1167,9 +1185,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "craft-scan"
+version = "0.1.0"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F144%2Fhead#4b5255d9ea6c0bfe8a4da5dfd04c4f587917572d"
+dependencies = [
+ "craft-job",
+ "image",
+ "log",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "craft-ui"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=5c874d51eeb3de70e735c8ce87a59a7dedd47675#5c874d51eeb3de70e735c8ce87a59a7dedd47675"
+source = "git+https://github.com/storytold/craft-libs?rev=refs%2Fpull%2F112%2Fhead#8a10538ffd40101e61f7c101ced3e57ffd7acbc5"
 dependencies = [
  "egui",
  "serde",
@@ -3995,6 +4025,7 @@ name = "pdfcraft-automation"
 version = "0.8.0"
 dependencies = [
  "base64 0.22.1",
+ "craft-devices",
  "flate2",
  "image",
  "pdfcraft-cos",
@@ -4016,6 +4047,7 @@ name = "pdfcraft-cli"
 version = "0.8.0"
 dependencies = [
  "base64 0.22.1",
+ "craft-job",
  "pdfcraft-audit",
  "pdfcraft-automation",
  "pdfcraft-cos",
@@ -4246,7 +4278,9 @@ name = "pdfcraft-platform"
 version = "0.8.0"
 dependencies = [
  "async-channel",
+ "craft-scan",
  "futures-lite",
+ "pdfcraft-wia",
  "rustix 1.1.5",
  "zbus",
 ]
@@ -4398,6 +4432,16 @@ dependencies = [
  "pdfcraft-ui-egui",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "pdfcraft-wia"
+version = "0.8.0"
+dependencies = [
+ "craft-scan",
+ "log",
+ "windows",
+ "windows-core",
 ]
 
 [[package]]
@@ -6418,7 +6462,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.5",
  "windows-sys 0.52.0",
