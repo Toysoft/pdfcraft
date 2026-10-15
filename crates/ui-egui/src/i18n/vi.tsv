@@ -2615,3 +2615,9 @@ key	Space	Space
 	Redact Image	Xóa nội dung nhạy cảm của hình ảnh
 	Create Link…	Tạo liên kết…
 	Recognize Text…	Nhận dạng văn bản…
+	The labels are in English: the signature's font can't draw them in this language.	Các nhãn được hiển thị bằng tiếng Anh: phông chữ của chữ ký không thể hiển thị chúng bằng ngôn ngữ này.
+	Digitally signed by	Được ký số bởi
+	DN: 	Tên phân biệt: 
+	Reason: 	Lý do: 
+	Location: 	Địa điểm: 
+	Date: 	Ngày: 
