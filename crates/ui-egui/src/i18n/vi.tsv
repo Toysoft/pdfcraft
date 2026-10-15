@@ -2681,3 +2681,18 @@ key	Space	Space
 	Words	Từ
 	“{name}” changed on disk after it was opened or last saved. Saving now replaces that newer version with this one.	“{name}” đã thay đổi trên đĩa sau khi được mở hoặc lưu lần cuối. Lưu lúc này sẽ thay thế phiên bản mới hơn đó bằng phiên bản này.
 @id	file.word_count	Đếm từ…
+	Replace…	Thay thế…
+	Replace ({key})	Thay thế ({key})
+	Replace with	Thay thế bằng
+	Replace all	Thay thế tất cả
+	No matches to replace	Không có kết quả khớp để thay thế
+	{why} ({n})	{why} ({n})
+	Not replaced: {why}	Không thay thế: {why}
+	Nothing replaced	Không có gì được thay thế
+	Replaced {n} on {pages}	Đã thay thế {n} trên {pages}
+	{k} skipped: {why}	Đã bỏ qua {k}: {why}
+	spans two paragraphs	trải qua hai đoạn văn
+	scanned text	văn bản được quét
+	the font can't draw it	phông chữ không vẽ được
+	the paragraph can't be rewritten	không thể viết lại đoạn văn
+	not editable text	văn bản không chỉnh sửa được
