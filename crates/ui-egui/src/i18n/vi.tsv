@@ -2681,3 +2681,8 @@ key	Space	Space
 	Words	Từ
 	“{name}” changed on disk after it was opened or last saved. Saving now replaces that newer version with this one.	“{name}” đã thay đổi trên đĩa sau khi được mở hoặc lưu lần cuối. Lưu lúc này sẽ thay thế phiên bản mới hơn đó bằng phiên bản này.
 @id	file.word_count	Đếm từ…
+	Attach a file…	Đính kèm tệp…
+	Delete attachment	Xóa tệp đính kèm
+	Attaching files is not available on the web yet	Chưa thể đính kèm tệp trên web
+	Attach {name}	Đính kèm {name}
+	Delete attachment {key}	Xóa tệp đính kèm {key}
