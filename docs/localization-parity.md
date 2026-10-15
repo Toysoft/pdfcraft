@@ -39,7 +39,7 @@ add a language: [localization.md](localization.md). Summary in [ROADMAP.md](../R
 | Indonesian | `id` | 0 | none | Latin | no | none | no | 3–5 |
 | Japanese | `ja` | 2,123 (99.1%) | dialogs and tooltips; no help | BIZ UDPGothic from craft-fonts; IME patched on macOS, Windows, X11, Wayland; vertical text renders but can't be edited | no | partial | yes | 4–8 |
 | German | `de` | 2,128 (99.3%) | dialogs and tooltips; no help | Latin | community, in progress (#828: terminology, clipping) | partial | yes | 2–4 |
-| Korean | `ko` | 2,670 entries (every bundled key) | dialogs and tooltips through `tl!`; no help | Hangul IME patched (Microsoft and Apple Korean, `vendor/README.md` winit 3, 6, 9, 10); no `Kore` face in craft-fonts, so desktop draws Hangul with an installed Korean face (Malgun Gothic, Apple SD Gothic Neo, Nanum Gothic) and the web shows boxes | no | partial | yes | 3–6 |
+| Korean | `ko` | 2,670 entries (every bundled key) | dialogs and tooltips through `tl!`; no help | Hangul IME patched (Microsoft and Apple Korean, `vendor/README.md` winit 3, 6, 9, 10); the interface draws Hangul with an installed Korean face (Malgun Gothic, Apple SD Gothic Neo, Nanum Gothic) until craft-fonts has a `Kore` face, and the web shows boxes; documents: Edit text, Add text, comments, Fill & Sign and form fields write Korean with craft-fonts NanumGothic/NanumMyeongjo, Korean predefined CMaps are read, non-embedded Adobe-Korea1 fonts render | no | partial | yes | 3–6 |
 | Vietnamese | `vi` | 2,591 (100% of current union + theme Appearance) | dialogs and tooltips; no help | Latin with stacked diacritics; bundled Inter covers them (fonts test) | community | partial | no | 2–4 |
 
 **Localization dimension ≈ 68%**: the mean over the twelve, counting a catalog's percentage but only
@@ -82,6 +82,7 @@ Acrobat languages PdfCraft lacks: Danish, Dutch, Finnish, Norwegian, Swedish, He
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | Korean in documents: Edit text, Add text, comments, Fill & Sign, form fields, Korean CMaps and non-embedded Korea1 rendering with craft-fonts Nanum faces |
 | 2026-10-15 | minor | Korean: 2,670-entry catalog, Korean date names, and an installed Hangul face on desktop until craft-fonts has a `Kore` face; twelve-language mean ≈ 76% |
 | 2026-10-13 | minor | Vietnamese (`vi`) catalog: 2,591 entries (100% of current key union + `theme`/`Appearance`); twelve-language mean ≈ 68%; native-speaker community review; registered with `plural_none` |
 | 2026-10-14 | minor | Italian: 2,528 entries after adding the 201 keys the other catalogs had and the code looks up |
